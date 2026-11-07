@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "core/rust-cli",
+    "core/rust-core",
+    "core/rust-kaspa-verifier",
+    "core/rust-runtime",
+]
+resolver = "2"

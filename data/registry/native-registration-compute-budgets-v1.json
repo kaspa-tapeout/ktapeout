@@ -1,0 +1,53 @@
+{
+  "schema": "KTAPEOUT-NATIVE-REGISTRATION-COMPUTE-BUDGETS-V1",
+  "network": "testnet-10",
+  "consensus_engine": {
+    "name": "rusty-kaspa",
+    "version": "2.1.0",
+    "revision": "01b532e8b553523216471682649693af92f0fd16"
+  },
+  "generated_at": "2026-11-05",
+  "measurement_source": {
+    "path": "core/rust-cli/tests/native_witness_real_contract.rs",
+    "sha256": "a2684f220c176e9941456b1d58e9d7d26e0670954736a7e250054a99546d6f8a",
+    "test": "public_g1c_assembly_executes_real_registration_contracts_in_pinned_vm",
+    "description": "Pinned VM measurements for the frozen real-contract registration fixture; budgets are the minimum tested accepting tiers for the recorded witness shapes."
+  },
+  "profiles": {
+    "INTERIOR": {
+      "status": "MEASURED",
+      "inputs": [
+        {
+          "input_index": 0,
+          "role": "parent",
+          "script_kind": "p2sh-covenant",
+          "entrypoint": "authorize_child",
+          "script_units": 107954,
+          "compute_budget": 10,
+          "budget_limit": 109999
+        },
+        {
+          "input_index": 1,
+          "role": "gap",
+          "script_kind": "p2sh-covenant",
+          "entrypoint": "register_interior",
+          "script_units": 477188,
+          "compute_budget": 47,
+          "budget_limit": 479999
+        },
+        {
+          "input_index": 2,
+          "role": "fee",
+          "script_kind": "p2pk-schnorr",
+          "entrypoint": "p2pk_schnorr",
+          "compute_budget": 10,
+          "budget_limit": 109999
+        }
+      ]
+    },
+    "SLOT": {
+      "status": "UNMEASURED",
+      "reason": "No pinned-v2.1.0 SLOT fixture measurement is included; requests using SLOT must be rejected."
+    }
+  }
+}

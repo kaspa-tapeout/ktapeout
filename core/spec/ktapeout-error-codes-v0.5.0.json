@@ -1,0 +1,18 @@
+{
+  "schema": "KTAPEOUT-ERROR-CODES-V0.5.0",
+  "protocol_semver": "0.5.0",
+  "prefix_rule": "implementations may append profile detail after the prefix but must preserve the exact prefix and class",
+  "codes": [
+    {"prefix":"E050_ENCODING","class":"parser","meaning":"Malformed or non-canonical bytes"},
+    {"prefix":"E050_VERSION","class":"eligibility","meaning":"Unsupported protocol or critical feature"},
+    {"prefix":"E050_DOMAIN","class":"logic","meaning":"Wrong hash domain or record kind"},
+    {"prefix":"E050_LAYOUT","class":"eligibility","meaning":"Invalid layout, topology, enum, or bound"},
+    {"prefix":"E050_SELECTOR","class":"logic","meaning":"Invalid range/proof, order, overlap, or cardinality"},
+    {"prefix":"E050_BINDING","class":"logic","meaning":"State, dependency, capability, value, asset, or successor mismatch"},
+    {"prefix":"E050_REPLAY","class":"logic","meaning":"Spent outpoint, stale epoch, nonce, or seal sequence"},
+    {"prefix":"E050_RESOURCE","class":"eligibility","meaning":"Mass, witness, state, ops, compute, or fee over limit"},
+    {"prefix":"E050_BARRIER","class":"logic","meaning":"Invalid seal-strength, barrier-mode, or completeness claim"},
+    {"prefix":"E050_MIGRATION","class":"logic","meaning":"Invalid version transition or recovery path"},
+    {"prefix":"E050_NETWORK","class":"operator","meaning":"NetworkPolicy mismatch or unavailable network evidence"}
+  ]
+}

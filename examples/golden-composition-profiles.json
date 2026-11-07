@@ -1,0 +1,20 @@
+[
+  {
+    "profile_id": "CounterState",
+    "version": "1",
+    "atomicity_class": "A0",
+    "state_namespace": "counter.state",
+    "interfaces": {"increment": "u8"},
+    "max_bytes": 1024,
+    "max_actions": 16
+  },
+  {
+    "profile_id": "TicketSettlement",
+    "version": "1",
+    "atomicity_class": "A2",
+    "state_namespace": "ticket.settlement",
+    "interfaces": {"ticket_id": "bytes32"},
+    "max_bytes": 2048,
+    "max_actions": 32
+  }
+]

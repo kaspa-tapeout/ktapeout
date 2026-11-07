@@ -1,0 +1,28 @@
+{
+  "schema": "KTAPEOUT-DEPENDENCY-AUDIT-POLICY-V1",
+  "protocol_semver": "0.5.0",
+  "lockfiles": [
+    "Cargo.lock"
+  ],
+  "scope": "KTAPEOUT 0.5.0 public Core, Runtime, CLI, and offline Kaspa Verifier using the pinned official Rusty Kaspa v2.1.0 commit",
+  "upstream_pin": {
+    "repository": "https://github.com/kaspanet/rusty-kaspa",
+    "revision": "01b532e8b553523216471682649693af92f0fd16",
+    "release": "v2.1.0",
+    "provenance": "The official repository commit API resolves this exact revision; it is not a fork. The official v2.0.1 tag resolves to cfafeb4c093fa37a303f1b9f19c58f986b870ce3.",
+    "rationale": "Keep v2.1.0: upstream 2a47b249 (Arithmetic safety and more, PR 1138) bounds compressed and uncompressed block-header parents. TN10 verify converts untrusted RpcBlock headers through this code before recomputing commitments. v2.0.1 lacks this input bound. The regression upstream_parent_limit_rejects_oversized_untrusted_rpc_headers exercises the required rejection. This pin does not establish real-network validation or waive advisories.",
+    "checked_on": "2026-10-30"
+  },
+  "advisories": [
+    { "id": "RUSTSEC-2021-0145", "expires_on": "2026-12-31", "rationale": "Approved transitive advisory exception for the pinned Rusty Kaspa v2.1.0 dependency graph; reassess or remove when upstream provides a compatible fix." },
+    { "id": "RUSTSEC-2024-0370", "expires_on": "2026-12-31", "rationale": "Approved transitive advisory exception for the pinned Rusty Kaspa v2.1.0 dependency graph; reassess or remove when upstream provides a compatible fix." },
+    { "id": "RUSTSEC-2024-0375", "expires_on": "2026-12-31", "rationale": "Approved transitive advisory exception for the pinned Rusty Kaspa v2.1.0 dependency graph; reassess or remove when upstream provides a compatible fix." },
+    { "id": "RUSTSEC-2024-0384", "expires_on": "2026-12-31", "rationale": "Approved transitive advisory exception for the pinned Rusty Kaspa v2.1.0 dependency graph; reassess or remove when upstream provides a compatible fix." },
+    { "id": "RUSTSEC-2024-0388", "expires_on": "2026-12-31", "rationale": "Approved transitive advisory exception for the pinned Rusty Kaspa v2.1.0 dependency graph; reassess or remove when upstream provides a compatible fix." },
+    { "id": "RUSTSEC-2024-0436", "expires_on": "2026-12-31", "rationale": "Approved transitive advisory exception for the pinned Rusty Kaspa v2.1.0 dependency graph; reassess or remove when upstream provides a compatible fix." },
+    { "id": "RUSTSEC-2025-0052", "expires_on": "2026-12-31", "rationale": "Approved transitive advisory exception for the pinned Rusty Kaspa v2.1.0 dependency graph; reassess or remove when upstream provides a compatible fix." },
+    { "id": "RUSTSEC-2026-0306", "expires_on": "2026-12-31", "rationale": "Approved transitive faster-hex advisory exception for the pinned Rusty Kaspa v2.1.0 dependency graph; reassess or remove when upstream provides a compatible fix." },
+    { "id": "RUSTSEC-2024-0449", "expires_on": "2026-12-31", "rationale": "Approved transitive unsafe-libyaml maintenance advisory exception for the pinned Rusty Kaspa v2.1.0 dependency graph; reassess or remove when upstream provides a compatible fix." },
+    { "id": "RUSTSEC-2026-0441", "expires_on": "2026-12-31", "rationale": "User-approved maintenance advisory exception for pin-utils 0.1.1, reached transitively through async-std 1.13.2 -> workflow-core 0.18.0 -> official Rusty Kaspa v2.1.0; offline lock-only resolution found no compatible update. No direct KTAPEOUT use or exploitability is established; keep disclosed and reassess by expiry." }
+  ]
+}

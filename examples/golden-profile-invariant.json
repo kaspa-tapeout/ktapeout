@@ -1,0 +1,24 @@
+{
+  "schema": "KTAPEOUT-PROFILE-INVARIANT-V1",
+  "protocol_semver": "0.5.0",
+  "profile_id": "PureCompute",
+  "profile_semver": "1.0.0",
+  "vector_set_id": "pure-compute-invariant-v1",
+  "invariants": {
+    "state_owner": {"enforcement": "PROFILE_RUNTIME", "statement": "Each state transition has one explicit state owner supplied by the application manifest.", "negative_vector_ids": ["negative.state-owner"]},
+    "mutation_authority": {"enforcement": "PROFILE_RUNTIME", "statement": "A state mutation is accepted only for a declared action authority.", "negative_vector_ids": ["negative.mutation-authority"]},
+    "valid_predecessor_roles": {"enforcement": "PROFILE_RUNTIME", "statement": "Only declared predecessor object roles may enter the transition.", "negative_vector_ids": ["negative.predecessor-role"]},
+    "authorized_successor_templates": {"enforcement": "PROFILE_RUNTIME", "statement": "Successor objects must use a declared output template.", "negative_vector_ids": ["negative.successor-template"]},
+    "value_conservation": {"enforcement": "PROFILE_RUNTIME", "statement": "Application value outputs cannot exceed value inputs after declared transfers.", "negative_vector_ids": ["negative.value-conservation"]},
+    "fee_separation": {"enforcement": "PROFILE_RUNTIME", "statement": "Transaction fees are modeled separately from application-owned value.", "negative_vector_ids": ["negative.fee-separation"]},
+    "nonce_epoch_replay": {"enforcement": "PROFILE_RUNTIME", "statement": "A consumed nonce cannot authorize the same state transition again.", "negative_vector_ids": ["negative.replay"]},
+    "resource_ceilings": {"enforcement": "PROFILE_RUNTIME", "statement": "Declared resource ceilings are checked before plan construction.", "negative_vector_ids": ["negative.resource-ceiling"]},
+    "exit_recovery": {"enforcement": "OPERATOR_POLICY", "statement": "Recovery requires the declared recovery authority and remains an operator-mediated local plan.", "negative_vector_ids": ["negative.exit-recovery"]},
+    "availability_assumptions": {"enforcement": "EXTERNAL_ASSUMPTION", "statement": "Unavailable external providers cannot be represented as successful execution.", "negative_vector_ids": ["negative.availability"]},
+    "external_proof_device_assumptions": {"enforcement": "EXTERNAL_ASSUMPTION", "statement": "Missing external proof or device evidence requires human review.", "negative_vector_ids": ["negative.external-proof"]},
+    "composition_assumptions": {"enforcement": "PROFILE_RUNTIME", "statement": "Composed dependencies are identified by exact digest rather than name alone.", "negative_vector_ids": ["negative.composition"]}
+  },
+  "forbidden_transitions": [
+    {"transition_id": "bypass-declared-exit", "statement": "A transition must not bypass the declared exit and recovery path.", "negative_vector_id": "negative.forbidden-transition"}
+  ]
+}

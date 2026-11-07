@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/tooling/ktapeout-application-lock-v2.schema.json",
+  "title": "KTAPEOUT Application Lock V2",
+  "description": "Tooling-only reproducibility-complete extension of Application Lock V1; no consensus or L1 authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_semver", "lock_hash", "recipe_hash", "composition_root", "components", "interface_binding_root", "effect_scope_root", "resource_policy_hash", "settlement_policy_hash", "dependency_root", "runtime_digest", "compiler_lock_digest", "network_policy_id", "created_at", "reproducibility_roots"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-APPLICATION-LOCK-V2"},
+    "protocol_semver": {"const": "0.5.0"},
+    "lock_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "recipe_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "composition_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "components": {"$ref": "ktapeout-application-lock-v1.schema.json#/properties/components"},
+    "interface_binding_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "effect_scope_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "resource_policy_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "settlement_policy_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "dependency_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "runtime_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "compiler_lock_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "network_policy_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "created_at": {"type": "string", "format": "date-time"},
+    "reproducibility_roots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter_root", "abi_root", "vector_root", "package_registry_root"],
+      "properties": {
+        "adapter_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "abi_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "vector_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "package_registry_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

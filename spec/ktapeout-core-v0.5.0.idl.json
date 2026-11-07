@@ -1,0 +1,87 @@
+{
+  "schema": "KTAPEOUT-CORE-IDL-V0.5.0",
+  "version": 1,
+  "status": "PROPOSED",
+  "compatibility": "standalone-v0.5.0; unknown historical records are rejected",
+  "encoding": {
+    "byte_order": "little-endian",
+    "outpoint": "txid[32] || output_index:uint32_le",
+    "text": "uint16_le byte_length || utf8_bytes",
+    "hash": "bytes32",
+    "max_record_bytes": 262144,
+    "max_text_bytes": 128,
+    "no_unbounded_lists": true,
+    "enum_wire_encoding": "u8 ordinal from the corresponding enum values array",
+    "record_hash": "SHA-256(domain_tag_utf8 || 0x00 || canonical_record_bytes)",
+    "record_commitment_scope": "network-independent; transaction-bound domains must bind network_id",
+    "zero_hash": "32 zero bytes; only permitted where the normative record rule explicitly says so"
+  },
+  "feature_registry": {
+    "encoding": "ASCII lowercase [a-z0-9][a-z0-9._-]{0,63}; max 64; raw UTF-8 byte sort",
+    "root": "SHA-256(KTAPEOUT/0.5.0/FEATURE_SET/V1 || 0x00 || count:uint16_le || repeated length:uint16_le || identifier_utf8)",
+    "critical": ["partition.layout.v1", "partition.action.v1", "collective.seal.v1"],
+    "optional": ["l1.proof.barrier.v1", "profile.sparse.v1"]
+  },
+  "limits": {
+    "max_features": 64,
+    "max_batch_inputs": 64,
+    "max_batch_outputs": 64
+  },
+  "constraints": {
+    "non_zero_layout_hashes": ["deployment_id", "profile_hash", "layout_id", "partition_id_domain", "leaf_encoding_hash", "template_root", "invariant_hash", "network_policy_class"],
+    "non_zero_action_hashes": ["layout_hash", "selector_commitment", "input_outpoint_root", "successor_root", "capability_hash", "policy_hash", "resource_bill_hash", "dependency_root"],
+    "non_zero_seal_hashes": ["layout_hash", "expected_selector_commitment", "included_action_root", "coverage_commitment", "state_commitment", "authority_hash", "resource_bill_hash"],
+    "zero_hash_allowed_by_explicit_rule": ["previous_state_root_at_epoch_zero", "proof_binding_hash", "previous_seal_hash_at_epoch_zero"]
+  },
+  "domain_tags": {
+    "partition_layout": "KTAPEOUT/0.5.0/PARTITION_LAYOUT/V1",
+    "partition_action": "KTAPEOUT/0.5.0/PARTITION_ACTION/V1",
+    "collective_seal": "KTAPEOUT/0.5.0/COLLECTIVE_SEAL/V1",
+    "input_outpoint_root": "KTAPEOUT/0.5.0/INPUT_OUTPOINT_ROOT/V1",
+    "successor_root": "KTAPEOUT/0.5.0/SUCCESSOR_ROOT/V1",
+    "capability_set_root": "KTAPEOUT/0.5.0/CAPABILITY_SET_ROOT/V1"
+  },
+  "enums": {
+    "topology": {"encoding":"u8","values":["SINGLETON", "INDEPENDENT", "BOUNDED_COLLECTIVE"]},
+    "merge_mode": {"encoding":"u8","values":["NONE", "DISJOINT", "ORDERED", "REDUCER"]},
+    "action_kind": {"encoding":"u8","values":["LOCAL", "ATOMIC_BATCH", "MIGRATION"]},
+    "seal_strength": {"encoding":"u8","values":["LOCAL_RECEIPT", "ACCUMULATOR", "FULL_BARRIER"]},
+    "barrier_mode": {"encoding":"u8","values":["NONE", "DIRECT_COVERAGE", "L1_PROOF"]},
+    "selector_kind": {"encoding":"u8","values":["FIXED_RANGE", "MERKLE_COMMITMENT"]}
+  },
+  "records": {
+    "KPartitionLayoutV1": [
+      {"name":"version","type":"u32"}, {"name":"protocol_id","type":"text"},
+      {"name":"protocol_semver","type":"text"}, {"name":"critical_features_root","type":"hash"},
+      {"name":"optional_features_root","type":"hash"}, {"name":"deployment_id","type":"hash"},
+      {"name":"profile_hash","type":"hash"}, {"name":"layout_id","type":"hash"},
+      {"name":"partition_id_domain","type":"hash"}, {"name":"partition_count","type":"u32"},
+      {"name":"leaf_encoding_hash","type":"hash"}, {"name":"topology","type":"u8","enum":"topology"},
+      {"name":"merge_mode","type":"u8","enum":"merge_mode"}, {"name":"template_root","type":"hash"},
+      {"name":"invariant_hash","type":"hash"}, {"name":"network_policy_class","type":"hash"},
+      {"name":"max_partition_state_bytes","type":"u64"}, {"name":"max_batch_inputs","type":"u32"},
+      {"name":"max_batch_outputs","type":"u32"}, {"name":"max_selector_proof_bytes","type":"u64"},
+      {"name":"max_witness_bytes","type":"u64"}, {"name":"max_ops","type":"u64"},
+      {"name":"max_compute_units","type":"u64"}
+    ],
+    "KPartitionActionV1": [
+      {"name":"version","type":"u32"}, {"name":"layout_hash","type":"hash"},
+      {"name":"action_kind","type":"u8","enum":"action_kind"}, {"name":"epoch","type":"u64"},
+      {"name":"action_nonce","type":"u64"}, {"name":"selector_kind","type":"u8","enum":"selector_kind"},
+      {"name":"selector_commitment","type":"hash"}, {"name":"input_outpoint_root","type":"hash"},
+      {"name":"previous_state_root","type":"hash"}, {"name":"successor_root","type":"hash"},
+      {"name":"capability_hash","type":"hash"}, {"name":"policy_hash","type":"hash"},
+      {"name":"resource_bill_hash","type":"hash"}, {"name":"dependency_root","type":"hash"}
+    ],
+    "KCollectiveSealV1": [
+      {"name":"version","type":"u32"}, {"name":"layout_hash","type":"hash"},
+      {"name":"epoch","type":"u64"}, {"name":"seal_strength","type":"u8","enum":"seal_strength"},
+      {"name":"barrier_mode","type":"u8","enum":"barrier_mode"},
+      {"name":"previous_seal_hash","type":"hash"},
+      {"name":"expected_selector_commitment","type":"hash"}, {"name":"included_action_root","type":"hash"},
+      {"name":"coverage_commitment","type":"hash"}, {"name":"state_commitment","type":"hash"},
+      {"name":"proof_binding_hash","type":"hash"}, {"name":"authority_hash","type":"hash"},
+      {"name":"resource_bill_hash","type":"hash"}
+    ]
+  }
+}

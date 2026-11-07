@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/spec/ktapeout-application-package-v0.5.0.schema.json",
+  "title": "KTAPEOUT v0.5.0 Application Package Manifest",
+  "description": "Non-consensus, content-addressed application package boundary. It connects Core, Profiles, Kaspa adapters and payment/indexer tooling without changing Core canonical bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_semver", "identity", "profile", "execution", "provenance", "limits", "economics"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-APPLICATION-PACKAGE-V0.5.0"},
+    "protocol_semver": {"const": "0.5.0"},
+    "identity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["application_id", "release_id", "artifact_id", "resource_kind"],
+      "properties": {
+        "application_id": {"$ref": "#/$defs/hash"},
+        "release_id": {"$ref": "#/$defs/hash"},
+        "artifact_id": {"$ref": "#/$defs/hash"},
+        "resource_kind": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$"},
+        "covenant_family_id": {"$ref": "#/$defs/hash"},
+        "instance_outpoint": {"type": "string", "pattern": "^[0-9a-f]{64}:[0-9]{1,10}$"}
+      }
+    },
+    "profile": {
+      "type": "object", "additionalProperties": false,
+      "required": ["profile_hash", "state_layout_hash", "dependency_root"],
+      "properties": {
+        "profile_hash": {"$ref": "#/$defs/hash"},
+        "state_layout_hash": {"$ref": "#/$defs/hash"},
+        "dependency_root": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "execution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "state_mode", "proof_mode", "settlement_mode"],
+      "properties": {
+        "mode": {"enum": ["native-covenant", "lane-based", "proof-backed", "external-verified"]},
+        "state_mode": {"enum": ["utxo-partitioned", "lane-scoped", "committed-external"]},
+        "proof_mode": {"enum": ["none", "receipt", "zk", "external-attestation"]},
+        "settlement_mode": {"enum": ["covenant", "lane-settlement", "proof-settlement", "external-payment"]}
+      }
+    },
+    "provenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_format", "compiler_id", "compiler_version", "abi_id", "abi_version", "abi_hash", "dependencies"],
+      "properties": {
+        "artifact_format": {"type": "string", "pattern": "^[a-z][a-z0-9._:-]{0,127}$"},
+        "compiler_id": {"type": "string", "pattern": "^[a-z][a-z0-9._:-]{0,127}$"},
+        "compiler_version": {"type": "string", "minLength": 1, "maxLength": 128},
+        "abi_id": {"type": "string", "pattern": "^[a-z][a-z0-9._:-]{0,127}$"},
+        "abi_version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "abi_hash": {"$ref": "#/$defs/hash"},
+        "dependencies": {"type": "array", "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/hash"}},
+        "entrypoints": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$"}}
+      }
+    },
+    "limits": {
+      "type": "object", "additionalProperties": false,
+      "required": ["max_state_bytes", "max_witness_bytes", "max_compute_units", "max_mass", "max_transaction_bytes"],
+      "properties": {
+        "max_state_bytes": {"type": "integer", "minimum": 0, "maximum": 262144},
+        "max_witness_bytes": {"type": "integer", "minimum": 0, "maximum": 262144},
+        "max_compute_units": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+        "max_mass": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+        "max_transaction_bytes": {"type": "integer", "minimum": 0, "maximum": 1048576}
+      }
+    },
+    "economics": {
+      "type": "object", "additionalProperties": false,
+      "required": ["storage_floor_policy_id", "quote_method", "currency_unit", "payment_adapter"],
+      "properties": {
+        "storage_floor_policy_id": {"$ref": "#/$defs/hash"},
+        "quote_method": {"enum": ["network-policy", "fresh-node-quote", "declared-estimate"]},
+        "currency_unit": {"type": "string", "pattern": "^[a-z0-9._-]{1,32}$"},
+        "payment_adapter": {"enum": ["none", "x402-kaspa", "covenant", "custom"]},
+        "call_price_sompi": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
+        "fee_budget_sompi": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807}
+      }
+    },
+    "l1_binding": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "network_policy_id": {"$ref": "#/$defs/hash"},
+        "covenant_id": {"$ref": "#/$defs/hash"},
+        "lane_id": {"$ref": "#/$defs/hash"},
+        "proof_system": {"type": "string", "pattern": "^[a-z][a-z0-9._:-]{0,127}$"},
+        "proof_version": {"type": "string", "maxLength": 64}
+      }
+    },
+    "extensions": {
+      "type": "object", "propertyNames": {"pattern": "^[a-z][a-z0-9._-]{0,63}$"},
+      "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+      "maxProperties": 32
+    }
+  },
+  "$defs": {"hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}

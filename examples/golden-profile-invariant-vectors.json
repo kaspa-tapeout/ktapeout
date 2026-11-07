@@ -1,0 +1,21 @@
+{
+  "schema": "KTAPEOUT-PROFILE-INVARIANT-VECTORS-V1",
+  "protocol_semver": "0.5.0",
+  "profile_id": "PureCompute",
+  "profile_semver": "1.0.0",
+  "vectors": [
+    {"vector_id": "negative.state-owner", "invariant_id": "state_owner", "input": {"state_owner": null}, "expected_outcome": "REJECT"},
+    {"vector_id": "negative.mutation-authority", "invariant_id": "mutation_authority", "input": {"actor": "ungranted", "action": "mutate"}, "expected_outcome": "REJECT"},
+    {"vector_id": "negative.predecessor-role", "invariant_id": "valid_predecessor_roles", "input": {"predecessor_role": "unknown"}, "expected_outcome": "REJECT"},
+    {"vector_id": "negative.successor-template", "invariant_id": "authorized_successor_templates", "input": {"successor_template": "unlisted"}, "expected_outcome": "REJECT"},
+    {"vector_id": "negative.value-conservation", "invariant_id": "value_conservation", "input": {"input_value": 10, "output_value": 11}, "expected_outcome": "REJECT"},
+    {"vector_id": "negative.fee-separation", "invariant_id": "fee_separation", "input": {"fee_charged_to_state_value": true}, "expected_outcome": "REJECT"},
+    {"vector_id": "negative.replay", "invariant_id": "nonce_epoch_replay", "input": {"nonce": 7, "already_consumed": true}, "expected_outcome": "REJECT"},
+    {"vector_id": "negative.resource-ceiling", "invariant_id": "resource_ceilings", "input": {"declared_limit": 8, "actual": 9}, "expected_outcome": "REJECT"},
+    {"vector_id": "negative.exit-recovery", "invariant_id": "exit_recovery", "input": {"recovery_authority": "unauthorized"}, "expected_outcome": "REJECT"},
+    {"vector_id": "negative.availability", "invariant_id": "availability_assumptions", "input": {"required_provider": "unavailable"}, "expected_outcome": "UNAVAILABLE"},
+    {"vector_id": "negative.external-proof", "invariant_id": "external_proof_device_assumptions", "input": {"proof_status": "missing"}, "expected_outcome": "REQUIRES_HUMAN_REVIEW"},
+    {"vector_id": "negative.composition", "invariant_id": "composition_assumptions", "input": {"dependency_digest": "substituted"}, "expected_outcome": "REJECT"},
+    {"vector_id": "negative.forbidden-transition", "invariant_id": "forbidden_transitions", "input": {"transition": "bypass-exit"}, "expected_outcome": "REJECT"}
+  ]
+}

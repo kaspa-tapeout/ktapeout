@@ -1,0 +1,470 @@
+{
+  "schema": "KTAPEOUT-TOCCATA-NATIVE-WITNESS-ABI-V1",
+  "generation": {
+    "generator_version": "profile-source-abi-gen/1.0.0",
+    "generated_at": "2026-11-03",
+    "mode": "mechanical-source-extraction"
+  },
+  "sources": [
+    {
+      "role": "namedCompiler",
+      "path": "NamespaceNamedLifecycleV6/1.0.0/source/compiler.rs",
+      "sha256": "7e4b704e897bf57238869c5cb82eaffa018937bd4718c2e81000c74ebb6177df",
+      "line_ranges": [
+        [
+          20,
+          31
+        ],
+        [
+          74,
+          75
+        ],
+        [
+          247,
+          249
+        ]
+      ]
+    },
+    {
+      "role": "namedContract",
+      "path": "NamespaceNamedLifecycleV6/1.0.0/source/contract.json",
+      "sha256": "31e1d3591b4a3808106500a1a66065cd4375b80dac3574ec89c71eb82407ca78"
+    },
+    {
+      "role": "namedCli",
+      "path": "NamespaceNamedLifecycleV6/1.0.0/source/named-lifecycle-cli.rs",
+      "sha256": "1eb8ccca5dd9c787126f3ad015deed52967e3816c5ab6fa673def94b192f6ff8"
+    },
+    {
+      "role": "issuancePlan",
+      "path": "NamespaceIssuanceV1/1.0.0/source/native-plan.rs",
+      "sha256": "4958cfeaf6d04f1ab40de2d601f4b78e01331b68354141984aac6089fe115195",
+      "line_ranges": [
+        [
+          38,
+          46
+        ],
+        [
+          73,
+          75
+        ]
+      ]
+    },
+    {
+      "role": "authorizeChild",
+      "path": "NamespaceIssuanceV1/1.0.0/source/namespace_registry_child_auth_probe_v2_source.rs",
+      "sha256": "36f7e06c432c6e1a49ceca353b0d97b082ed24110c5967dc8a2c94d51ff8d32b",
+      "line_ranges": [
+        [
+          36,
+          81
+        ]
+      ]
+    },
+    {
+      "role": "issuanceContract",
+      "path": "NamespaceIssuanceV1/1.0.0/source/contract.json",
+      "sha256": "b0755bf29e342d0b5c06861fe5addc4c658ed80d78c333bf8013d2422e5c9463"
+    },
+    {
+      "role": "compilerArgumentExpansion",
+      "path": "vendored-silverscript-compat/src/compiler/mod.rs",
+      "sha256": "e31f11a90c4c59a3cf19fc9dc14706b992bc3c60ae3292047ebf541a95aa69d9",
+      "line_ranges": [
+        [
+          192,
+          219
+        ],
+        [
+          222,
+          244
+        ],
+        [
+          247,
+          380
+        ]
+      ]
+    },
+    {
+      "role": "compilerArrayEncoding",
+      "path": "vendored-silverscript-compat/src/compiler/compile.rs",
+      "sha256": "58681f323a7693467f68710ec3d5f86ca29b99864326f47ee4d3b4aefd39ea52",
+      "line_ranges": [
+        [
+          1112,
+          1217
+        ],
+        [
+          1246,
+          1254
+        ]
+      ]
+    },
+    {
+      "role": "compilerCovenantWrapper",
+      "path": "vendored-silverscript-compat/src/compiler/covenant_declarations.rs",
+      "sha256": "f4d7f7d96df593f3b5d94bc971bfd888987b6f0c65cce559a27265a0f83390b9",
+      "line_ranges": [
+        [
+          395,
+          414
+        ],
+        [
+          416,
+          560
+        ]
+      ]
+    },
+    {
+      "role": "registrationWitnessCallPath",
+      "path": "NamespaceNamedLifecycleV6/1.0.0/source/registration-reference-witness.rs",
+      "sha256": "82e9f38bdd590d491bb328ab1766e0f5d6af74d4faffcf9eaa37c99b14661cc6",
+      "line_ranges": [
+        [
+          173,
+          243
+        ]
+      ]
+    },
+    {
+      "role": "registrationParentSource",
+      "path": "NamespaceIssuanceV1/1.0.0/source/namespace_registry_child_auth_probe_v2_source.rs",
+      "sha256": "36f7e06c432c6e1a49ceca353b0d97b082ed24110c5967dc8a2c94d51ff8d32b",
+      "line_ranges": [
+        [
+          36,
+          81
+        ]
+      ]
+    }
+  ],
+  "witness_expansion": {
+    "state": "ordered-field-recursion",
+    "state_array": "field-major-recursion-without-count-prefix",
+    "scalar_int": "script-number-via-add_i64",
+    "fixed_array_int": "signed-int64-little-endian-elements-concatenated-then-one-data-push",
+    "fixed_array_bytes": "element-bytes-concatenated-then-one-data-push",
+    "covenant_auth_parameters": "when contract fields exist, generated auth wrapper omits the first prevState parameter",
+    "reference_call": "covenant-auth-wrapper-omits-first-prevState-parameter",
+    "selector": "function-branch-index-pushed-after-declared-arguments",
+    "source_roles": [
+      "compilerArgumentExpansion",
+      "compilerArrayEncoding",
+      "compilerCovenantWrapper",
+      "registrationWitnessCallPath"
+    ]
+  },
+  "type_encodings": {
+    "State": {
+      "encoding": "fields recursively expanded in StructRegistry declaration order; scalar fields encoded by their declared DSL type",
+      "source": "vendored-silverscript-compat/src/compiler/mod.rs"
+    },
+    "StateArray": {
+      "encoding": "for each declared struct field in order, encode the values of that field across all states; no count prefix",
+      "source": "vendored-silverscript-compat/src/compiler/mod.rs"
+    },
+    "sig": {
+      "encoding": "65-byte signature data item",
+      "source": "vendored-silverscript-compat/src/compiler/mod.rs"
+    },
+    "pubkey": {
+      "encoding": "32-byte public key data item",
+      "source": "vendored-silverscript-compat/src/compiler/mod.rs"
+    },
+    "byte[N]": {
+      "encoding": "exactly N raw bytes in one data item",
+      "source": "vendored-silverscript-compat/src/compiler/mod.rs"
+    },
+    "int": {
+      "encoding": "scalar uses ScriptBuilder.add_i64 script-number encoding; int array elements use signed 8-byte little-endian concatenation",
+      "source": "vendored-silverscript-compat/src/compiler/mod.rs"
+    }
+  },
+  "state_encodings": {
+    "State": {
+      "namedLifecycle": {
+        "child": [
+          "objectKind",
+          "nonce",
+          "gapLo",
+          "gapHi",
+          "hiIsMax",
+          "nameKey",
+          "controllerCommitment",
+          "targetCommitment",
+          "targetAuthorityCommitment",
+          "resolverPolicyHash",
+          "bondSompi",
+          "namespaceHash",
+          "parentTemplateHash",
+          "parentPrefixLen",
+          "parentSuffixLen"
+        ],
+        "parent": [
+          "namespaceHash",
+          "authorityCommitment",
+          "resolverPolicyHash",
+          "registryRoot",
+          "nonce"
+        ]
+      },
+      "namespaceIssuance": {
+        "root": [
+          "objectKind",
+          "gapLo",
+          "gapHi",
+          "hiIsMax",
+          "nameKey",
+          "parentCovenantId",
+          "parentTemplateHash",
+          "parentPrefixLen",
+          "parentSuffixLen"
+        ],
+        "parent": [
+          "namespaceHash",
+          "authorityCommitment",
+          "resolverPolicyHash",
+          "registryRoot",
+          "nonce"
+        ]
+      },
+      "field_types": {
+        "namedLifecycle": {
+          "child": [
+            "int",
+            "int",
+            "byte[32]",
+            "byte[32]",
+            "int",
+            "byte[32]",
+            "byte[32]",
+            "byte[32]",
+            "byte[32]",
+            "byte[32]",
+            "int",
+            "byte[32]",
+            "byte[32]",
+            "int",
+            "int"
+          ],
+          "parent": [
+            "byte[32]",
+            "byte[32]",
+            "byte[32]",
+            "byte[32]",
+            "int"
+          ]
+        },
+        "namespaceIssuance": {
+          "root": [
+            "int",
+            "byte[32]",
+            "byte[32]",
+            "int",
+            "byte[32]",
+            "byte[32]",
+            "byte[32]",
+            "int",
+            "int"
+          ],
+          "parent": [
+            "byte[32]",
+            "byte[32]",
+            "byte[32]",
+            "byte[32]",
+            "int"
+          ]
+        }
+      }
+    },
+    "StateArray": {
+      "element": "State",
+      "expansion": "field-major; for each declared State field, collect that field across array elements and recursively encode it",
+      "count_prefix": false,
+      "count_source": "entrypoint transition constraints"
+    }
+  },
+  "entrypoints": [
+    {
+      "name": "authorize_child",
+      "source": "NamespaceIssuanceV1/1.0.0/source/namespace_registry_child_auth_probe_v2_source.rs",
+      "parameters": [
+        {
+          "name": "prevState",
+          "type": "State",
+          "position": 0
+        },
+        {
+          "name": "nextState",
+          "type": "State",
+          "position": 1
+        },
+        {
+          "name": "currentAuthority",
+          "type": "pubkey",
+          "position": 2
+        },
+        {
+          "name": "authoritySig",
+          "type": "sig",
+          "position": 3
+        }
+      ],
+      "returns": "State",
+      "variants": [],
+      "variantRules": {}
+    },
+    {
+      "name": "register_interior",
+      "source": "NamespaceNamedLifecycleV6/1.0.0/source/compiler.rs",
+      "parameters": [
+        {
+          "name": "prevState",
+          "type": "State",
+          "position": 0
+        },
+        {
+          "name": "nextStates",
+          "type": "State[]",
+          "position": 1
+        },
+        {
+          "name": "claimantSig",
+          "type": "sig",
+          "position": 2
+        },
+        {
+          "name": "claimant",
+          "type": "pubkey",
+          "position": 3
+        },
+        {
+          "name": "targetSig",
+          "type": "sig",
+          "position": 4
+        },
+        {
+          "name": "targetAuthority",
+          "type": "pubkey",
+          "position": 5
+        },
+        {
+          "name": "assertedKey",
+          "type": "byte[32]",
+          "position": 6
+        },
+        {
+          "name": "assertedTarget",
+          "type": "byte[32]",
+          "position": 7
+        },
+        {
+          "name": "assertedPolicy",
+          "type": "byte[32]",
+          "position": 8
+        },
+        {
+          "name": "assertedBond",
+          "type": "int",
+          "position": 9
+        },
+        {
+          "name": "assertedSuccessor",
+          "type": "byte[32]",
+          "position": 10
+        }
+      ],
+      "returns": "State[]",
+      "variants": [
+        "INTERIOR",
+        "SLOT"
+      ],
+      "variantRules": {
+        "INTERIOR": {
+          "nextStatesLength": 3
+        },
+        "SLOT": {
+          "nextStatesLength": 1
+        }
+      }
+    },
+    {
+      "name": "issue",
+      "source": "NamespaceIssuanceV1/1.0.0/source/native-plan.rs",
+      "parameters": [
+        {
+          "name": "prevState",
+          "type": "State",
+          "position": 0
+        },
+        {
+          "name": "nextStates",
+          "type": "State[]",
+          "position": 1
+        },
+        {
+          "name": "namespaceFrame",
+          "type": "byte[64]",
+          "position": 2
+        },
+        {
+          "name": "claimantSig",
+          "type": "sig",
+          "position": 3
+        },
+        {
+          "name": "claimant",
+          "type": "pubkey",
+          "position": 4
+        }
+      ],
+      "returns": "State[]",
+      "variants": [],
+      "variantRules": {}
+    },
+    {
+      "name": "change_owner_target",
+      "source": "NamespaceNamedLifecycleV6/1.0.0/source/compiler.rs",
+      "parameters": [
+        {
+          "name": "prevState",
+          "type": "State",
+          "position": 0
+        },
+        {
+          "name": "nextState",
+          "type": "State",
+          "position": 1
+        },
+        {
+          "name": "ownerSig",
+          "type": "sig",
+          "position": 2
+        },
+        {
+          "name": "owner",
+          "type": "pubkey",
+          "position": 3
+        },
+        {
+          "name": "nextOwner",
+          "type": "pubkey",
+          "position": 4
+        },
+        {
+          "name": "targetSig",
+          "type": "sig",
+          "position": 5
+        },
+        {
+          "name": "nextTargetAuthority",
+          "type": "pubkey",
+          "position": 6
+        }
+      ],
+      "returns": "State",
+      "variants": [],
+      "variantRules": {}
+    }
+  ]
+}

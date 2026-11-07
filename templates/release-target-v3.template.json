@@ -1,0 +1,25 @@
+{
+  "_notice": "TEMPLATE_ONLY: replace every <...> value and run ktape release adapters plus target preflight. Do not execute this template as-is.",
+  "schema": "KTAPEOUT-RELEASE-TARGET-V3",
+  "execution_line": "name-controller",
+  "project": "<absolute-project-path>",
+  "scope": {
+    "network": "testnet-10",
+    "application_uri": "ktape://testnet-10/app/<publisher>/<application>",
+    "wallet_address": "<TN10-controller-address>",
+    "workflow_authority_public_key": "<32-byte-hex-public-key>",
+    "name_controller_public_key": "<32-byte-hex-public-key>",
+    "permissions": []
+  },
+  "settings": {},
+  "max_fee_sompi": 0,
+  "authorization_ttl_seconds": 600,
+  "adapter": {
+    "path": "<registered-adapter-path>",
+    "sha256": "<64-hex-sha256>"
+  },
+  "arguments": [],
+  "dependencies": [],
+  "timeout_seconds": 120,
+  "release_adapter_id": "<registered-adapter-id>"
+}

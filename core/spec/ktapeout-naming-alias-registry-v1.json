@@ -1,0 +1,22 @@
+{
+  "schema": "KTAPEOUT-NAMING-ALIAS-REGISTRY-V1",
+  "protocol_semver": "0.5.0",
+  "aliases": [
+    {"alias": "legacy.l1contentprofilev1", "canonical_id": "ktape.official.profile.content.chunked", "object_kind": "profile"},
+    {"alias": "official.adapter.bridge", "canonical_id": "ktape.official.adapter.bridge", "object_kind": "adapter"},
+    {"alias": "official.adapter.registry", "canonical_id": "ktape.official.adapter.registry", "object_kind": "adapter"},
+    {"alias": "official.commitment", "canonical_id": "ktape.official.profile.commitment.external", "object_kind": "profile"},
+    {"alias": "official.content", "canonical_id": "ktape.official.profile.content.immutable", "object_kind": "profile"},
+    {"alias": "official.escrow", "canonical_id": "ktape.official.profile.settlement.escrow", "object_kind": "profile"},
+    {"alias": "official.recipe.commerce", "canonical_id": "ktape.official.recipe.commerce", "object_kind": "recipe"},
+    {"alias": "official.recipe.escrow-marketplace", "canonical_id": "ktape.official.recipe.escrow-marketplace", "object_kind": "recipe"},
+    {"alias": "official.recipe.external-compute", "canonical_id": "ktape.official.recipe.external-compute", "object_kind": "recipe"},
+    {"alias": "official.recipe.public-content", "canonical_id": "ktape.official.recipe.public-content", "object_kind": "recipe"},
+    {"alias": "official.recipe.public-state", "canonical_id": "ktape.official.recipe.public-state", "object_kind": "recipe"},
+    {"alias": "official.recipe.wallet-app", "canonical_id": "ktape.official.recipe.wallet-app", "object_kind": "recipe"},
+    {"alias": "official.recipe.website", "canonical_id": "ktape.official.recipe.chain-addressed-website", "object_kind": "recipe"},
+    {"alias": "official.settlement", "canonical_id": "ktape.official.profile.settlement.value", "object_kind": "profile"},
+    {"alias": "official.state", "canonical_id": "ktape.official.profile.state.partitioned", "object_kind": "profile"}
+  ],
+  "registry_hash": "a1f0713bdc0dbfd8efb58778132049950778052aade93b392055cbde524e6516"
+}

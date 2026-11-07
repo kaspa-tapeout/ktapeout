@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/tooling/ktapeout-developer-lock-v1.schema.json",
+  "title": "KTAPEOUT Developer Lock V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_semver", "lock_hash", "core_version", "feature_set_root", "profiles", "composition_root", "dependency_root", "runtime_digest", "compiler_lock_digest", "adapter_hash", "abi_version", "vector_root", "network_policy_id", "created_at"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-DEVELOPER-LOCK-V1"},
+    "protocol_semver": {"const": "0.5.0"},
+    "lock_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "core_version": {"const": "0.5.0"},
+    "feature_set_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "profiles": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["profile_id", "profile_hash", "package_digest", "admission_level", "package_provenance"], "properties": {"profile_id": {"type": "string", "maxLength": 128}, "profile_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "package_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "admission_level": {"enum": ["REFERENCE", "IMPLEMENTED", "TESTNET_ADMITTED", "PRODUCTION_CANDIDATE"]}, "package_provenance": {"type": "object", "additionalProperties": false, "required": ["publisher_id", "source_ref", "license_ref", "trust_tier"], "properties": {"publisher_id": {"type": "string", "minLength": 1, "maxLength": 128}, "source_ref": {"type": "string", "minLength": 1, "maxLength": 256}, "license_ref": {"type": "string", "minLength": 1, "maxLength": 128}, "trust_tier": {"enum": ["UNTRUSTED", "COMMUNITY", "VERIFIED", "CORE_MAINTAINER"]}}}}}},
+    "composition_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "dependency_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "runtime_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "compiler_lock_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "adapter_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "abi_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "vector_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "network_policy_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "created_at": {"type": "string", "format": "date-time"}
+  }
+}

@@ -1,0 +1,27 @@
+name: Rust workspace gates
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Configure build directory
+        run: echo "CARGO_TARGET_DIR=$RUNNER_TEMP/ktapeout-target" >> "$GITHUB_ENV"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.91.0 --profile minimal
+      - name: Install formatter and lint components
+        run: rustup component add rustfmt clippy --toolchain 1.91.0
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Test all crates
+        run: cargo test --workspace --locked
+      - name: Lint all crates
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked --version 0.22.2
+      - name: Fetch RustSec advisory database
+        run: git clone --depth 1 https://github.com/RustSec/advisory-db.git "$HOME/.cargo/advisory-db"
+      - name: Check dependency advisories and exception expiry
+        run: python scripts/check_dependency_audit.py

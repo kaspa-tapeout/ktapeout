@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/tooling/ktapeout-profile-package-v1.schema.json",
+  "title": "KTAPEOUT Profile Package V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_semver", "profile_id", "profile_semver", "profile_hash", "package_digest", "runtime_digest", "compiler_lock_digest", "vector_root", "resource_envelope_digest", "supported_core", "admission_level", "publisher_id", "source_ref", "license_ref", "trust_tier", "abi_version", "file_digests"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-PROFILE-PACKAGE-V1"},
+    "protocol_semver": {"const": "0.5.0"},
+    "profile_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "profile_semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "profile_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "package_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "runtime_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "compiler_lock_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "vector_root": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "resource_envelope_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "supported_core": {"const": "0.5.0"},
+    "admission_level": {"enum": ["REFERENCE", "IMPLEMENTED", "TESTNET_ADMITTED", "PRODUCTION_CANDIDATE"]},
+    "publisher_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "source_ref": {"type": "string", "minLength": 1, "maxLength": 256, "not": {"pattern": "^(https?://|.*\\\\|.*\\.\\.).*"}},
+    "license_ref": {"type": "string", "minLength": 1, "maxLength": 128},
+    "trust_tier": {"enum": ["UNTRUSTED", "COMMUNITY", "VERIFIED", "CORE_MAINTAINER"]},
+    "abi_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "file_digests": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+  }
+}

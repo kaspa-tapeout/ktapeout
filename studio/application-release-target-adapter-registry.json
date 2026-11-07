@@ -1,0 +1,78 @@
+{
+  "schema": "KTAPEOUT-RELEASE-TARGET-ADAPTER-REGISTRY-V3",
+  "required_workflow_phases": [
+    "prepare",
+    "preflight",
+    "authorize",
+    "execute",
+    "reconcile"
+  ],
+  "coordinator_managed_phases": [
+    "authorize"
+  ],
+  "adapters": {
+    "tn10-name-controller-release-v1": {
+    "status": "HOST_FREE_READY",
+      "execution_line": "name-controller",
+    "implemented_phases": [
+      "prepare",
+      "preflight",
+      "execute",
+      "reconcile"
+    ],
+      "host_dependencies": [],
+    "executables": {
+      "windows-x86_64": {
+        "path": "bin/ktape-name-update-adapter.exe",
+        "sha256": "b97a9a351b2edfb56340cfc2fad61557f693995aa2fbf509f33f6d504399437f"
+      }
+    },
+      "arguments": [],
+    "dependencies": [
+      {
+        "path": "bin/namespace_registry_child_signing_v1.exe",
+          "sha256": "5385dc7896dc465a9d14b96e459550f986de46e1d29250e694894a22687fe063"
+      },
+      {
+        "path": "bin/tn10_resolution_observe.exe",
+          "sha256": "0af542a17c995b0f2da5dbf9589a03530602a88f99e0c563c5a543f2bbbc70ff"
+      },
+      {
+        "path": "bin/registry_deed_state_address.exe",
+          "sha256": "4ae18f5d014298284c5d38037aff092c843ccec9e337de2d3c4647ee78fd2dce"
+      },
+      {
+        "path": "bin/tn10_submit_verified.exe",
+          "sha256": "004bb33097578b2d8cba058b9f604c0f74857eea88f0fa4a15a15f564e156344"
+      },
+      {
+        "path": "bin/tn10_tx_scan.exe",
+          "sha256": "a6e9718bb2ace6dda5d07d53e21b07813e97a2794105c1a6e7339835224966ff"
+      },
+      {
+        "path": "bin/kaspa_block_body_inclusion_verify.exe",
+          "sha256": "ce7c9a88d906ab2ced9d36affc5d3a2c99241c392e7871267a1b8ce167b74fa2"
+      }
+    ],
+      "settings": {},
+    "operator_settings_schema": {
+      "native_name_update": "native_name_update"
+    },
+    "evidence": "core/rust-cli/src/release_native_adapter.rs; core/rust-cli/src/bin/ktape-release-helper-bundle.rs",
+    "reason": "Shared Rust name-controller adapter. The coordinator owns authorization; the helper bundle supplies the pinned Windows executable and six fixed TN10 workflow tools under bin/."
+    },
+    "tn10-publisher-release-v1": {
+      "status": "IDENTITY_ONLY",
+      "execution_line": "publisher",
+      "implemented_phases": [],
+      "host_dependencies": [],
+      "executables": {},
+      "arguments": [],
+      "dependencies": [],
+      "settings": {},
+      "operator_settings_schema": {},
+      "evidence": "core/rust-cli/src/release_native_adapter.rs",
+      "reason": "Candidate format and release execution are separate, but no pinned, end-to-end publisher release adapter is registered yet."
+    }
+  }
+}

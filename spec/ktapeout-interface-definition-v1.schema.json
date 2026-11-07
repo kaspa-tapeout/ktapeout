@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/spec/ktapeout-interface-definition-v1.schema.json",
+  "title": "KTAPEOUT InterfaceDefinitionV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "interface_id", "interface_version", "role", "entrypoint", "input_schema", "output_schema", "error_schema", "input_schema_hash", "output_schema_hash", "error_schema_hash", "wallet_modes", "settlement_modes", "consumption", "evidence_verifier", "result_finality", "resource_bound"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-INTERFACE-DEFINITION-V1"},
+    "interface_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "interface_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "role": {"enum": ["PROVIDES", "REQUIRES"]},
+    "entrypoint": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "input_schema": {"type": "object"},
+    "output_schema": {"type": "object"},
+    "error_schema": {"type": "object"},
+    "input_schema_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "output_schema_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "error_schema_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "wallet_modes": {"type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": {"enum": ["WALLET", "WALLETLESS"]}},
+    "settlement_modes": {"type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 32}},
+    "consumption": {"enum": ["READ_ONLY", "CONSUME_ONCE", "REUSABLE_EVIDENCE"]},
+    "evidence_verifier": {"oneOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["id", "hash"], "properties": {"id": {"type": "string", "maxLength": 128}, "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}]},
+    "result_finality": {"type": "string", "maxLength": 128},
+    "resource_bound": {"type": "string", "maxLength": 128}
+  }
+}

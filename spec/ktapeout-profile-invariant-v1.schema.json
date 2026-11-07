@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/spec/0.5.0/ktapeout-profile-invariant-v1.schema.json",
+  "title": "KTAPEOUT Profile Invariant V1",
+  "description": "Machine-readable invariant declaration for a bounded Profile. It does not grant admission or signer authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_semver", "profile_id", "profile_semver", "vector_set_id", "invariants", "forbidden_transitions"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-PROFILE-INVARIANT-V1"},
+    "protocol_semver": {"const": "0.5.0"},
+    "profile_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "profile_semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "vector_set_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "invariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state_owner", "mutation_authority", "valid_predecessor_roles", "authorized_successor_templates", "value_conservation", "fee_separation", "nonce_epoch_replay", "resource_ceilings", "exit_recovery", "availability_assumptions", "external_proof_device_assumptions", "composition_assumptions"],
+      "patternProperties": {
+        "^[a-z][a-z0-9_]{0,127}$": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enforcement", "statement", "negative_vector_ids"],
+          "properties": {
+            "enforcement": {"enum": ["PROFILE_RUNTIME", "L1_CONSENSUS", "OPERATOR_POLICY", "EXTERNAL_ASSUMPTION"]},
+            "statement": {"type": "string", "minLength": 1, "maxLength": 1024},
+            "negative_vector_ids": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}}
+          }
+        }
+      }
+    },
+    "forbidden_transitions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["transition_id", "statement", "negative_vector_id"],
+        "properties": {
+          "transition_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+          "statement": {"type": "string", "minLength": 1, "maxLength": 1024},
+          "negative_vector_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}
+        }
+      }
+    }
+  }
+}

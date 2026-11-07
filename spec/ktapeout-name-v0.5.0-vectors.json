@@ -1,0 +1,57 @@
+{
+  "schema": "KTAPEOUT-NAME-VECTORS-V1",
+  "protocol_semver": "0.5.0",
+  "vectors": [
+    {
+      "id": "canonical-uppercase-slugs",
+      "uri": "ktape://testnet-10/app/Alice/KDesign",
+      "default_network": null,
+      "ok": true,
+      "canonical_uri": "ktape://testnet-10/app/alice/kdesign"
+    },
+    {
+      "id": "default-network-shorthand",
+      "uri": "ktape://app/Alice/KDesign",
+      "default_network": "mainnet",
+      "ok": true,
+      "canonical_uri": "ktape://mainnet/app/alice/kdesign"
+    },
+    {
+      "id": "pinned-release",
+      "uri": "ktape://mainnet/app/alice/kdesign@1111111111111111111111111111111111111111111111111111111111111111",
+      "default_network": null,
+      "ok": true,
+      "canonical_uri": "ktape://mainnet/app/alice/kdesign@1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "id": "percent-encoding-rejected",
+      "uri": "ktape://app/alice/k%64esign",
+      "default_network": "mainnet",
+      "ok": false
+    },
+    {
+      "id": "empty-path-segment-rejected",
+      "uri": "ktape://testnet-10/app//kdesign",
+      "default_network": null,
+      "ok": false
+    },
+    {
+      "id": "unsupported-network-rejected",
+      "uri": "ktape://devnet/app/alice/kdesign",
+      "default_network": null,
+      "ok": false
+    },
+    {
+      "id": "invalid-release-rejected",
+      "uri": "ktape://mainnet/app/alice/kdesign@abcd",
+      "default_network": null,
+      "ok": false
+    },
+    {
+      "id": "invalid-character-rejected",
+      "uri": "ktape://mainnet/app/alice/k_design",
+      "default_network": null,
+      "ok": false
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+[package]
+name = "ktapeout-cli"
+version = "0.5.0"
+edition = "2021"
+license = "MIT"
+description = "Official KTAPEOUT v0.5.0 JSON-first command line interface"
+default-run = "ktape"
+
+[features]
+default = ["coordinator", "developer-signing", "tn10-network"]
+# `host-bridges`, `publisher-adapter` and `publisher-signing` are host/publisher-only: they need modules and tools that
+# are not part of this repository, so they are off here and cannot be enabled.
+# Downstream, separately pinned adapters may reuse only the registry-independent signed-intent
+# verifier. They must disable default features to avoid embedding the coordinator's registry.
+coordinator = []
+adapter-contract-only = []
+host-free-native-adapter = []
+host-bridges = []
+publisher-adapter = []
+publisher-signing = ["host-bridges"]
+developer-signing = ["dep:zeroize", "dep:libc"]
+tn10-network = ["dep:kaspa-consensus-core", "dep:kaspa-rpc-core", "dep:kaspa-wrpc-client", "dep:tokio"]
+
+[[bin]]
+name = "ktape"
+path = "src/main.rs"
+
+[[bin]]
+name = "ktape-name-update-adapter"
+path = "src/bin/ktape-name-update-adapter.rs"
+required-features = ["host-free-native-adapter"]
+
+[[bin]]
+name = "ktape-release-helper-bundle"
+path = "src/bin/ktape-release-helper-bundle.rs"
+required-features = ["coordinator"]
+
+[dependencies]
+clap = { version = "4.5.45", features = ["derive"] }
+serde_json = "1.0.145"
+serde = { version = "1.0", features = ["derive"] }
+sha2 = "0.10.9"
+blake3 = "1.8.7"
+hex = "0.4.3"
+blake2b_simd = "1.0.5"
+base64 = "0.22"
+reqwest = { version = "=0.12.28", default-features = false, features = ["blocking", "rustls-tls"] }
+chrono = "0.4"
+ed25519-dalek = "2.2"
+num-bigint = "0.4.6"
+secp256k1 = "0.29"
+zeroize = { version = "1", optional = true }
+libc = { version = "0.2", optional = true }
+kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16", optional = true }
+kaspa-rpc-core = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16", optional = true }
+kaspa-wrpc-client = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "time"], optional = true }
+ktapeout-runtime = { path = "../rust-runtime" }
+ktapeout-core = { path = "../rust-core" }
+ktapeout-kaspa-verifier = { path = "../rust-kaspa-verifier" }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Storage_FileSystem"] }

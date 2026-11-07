@@ -1,0 +1,18 @@
+{
+  "schema": "KTAPEOUT-SOLVER-SCENARIO-CORPUS-V1",
+  "protocol_semver": "0.5.0",
+  "scenarios": [
+    {"id":"walletless-announcement","mode":"CORE","required_capabilities":["content.publish","name.resolve","artifact.read"],"expected_failure":"RESOURCE_MISMATCH"},
+    {"id":"public-state-board","mode":"CORE","required_capabilities":["state.partitioned","state.public-read"],"expected_failure":"CANONICAL_WRITER_CONFLICT"},
+    {"id":"wallet-application","mode":"CORE","required_capabilities":["state.partitioned","user.signature"],"expected_failure":"SIGNER_NETWORK_MISMATCH"},
+    {"id":"fixed-price-commerce","mode":"CORE","required_capabilities":["state.partitioned","value.settlement"],"expected_failure":"VALUE_FLOW_CONFLICT"},
+    {"id":"escrow-marketplace","mode":"CORE","required_capabilities":["state.partitioned","value.settlement","escrow.exit"],"expected_failure":"MISSING_EXIT_REFUND"},
+    {"id":"chain-addressed-website","mode":"CORE","required_capabilities":["content.publish","name.resolve","runtime.browser"],"expected_failure":"RESOLVER_DISAGREEMENT"},
+    {"id":"external-compute-game","mode":"CORE","required_capabilities":["state.partitioned","commitment.external"],"expected_failure":"UNVERIFIED_EXTERNAL_RESULT"},
+    {"id":"sponsored-user-authorized-write","mode":"CORE","required_capabilities":["state.partitioned","sponsor.fee","user.intent"],"expected_failure":"AUTHORITY_SPONSOR_CONFUSION"},
+    {"id":"multi-party-governance","mode":"CORE","required_capabilities":["state.partitioned","authority.threshold"],"expected_failure":"AUTHORITY_WRITER_CONFLICT"},
+    {"id":"provenance-attestation","mode":"CORE","required_capabilities":["content.publish","name.resolve","commitment.external"],"expected_failure":"ISSUER_EVIDENCE_MISMATCH"},
+    {"id":"subscription-metered-usage","mode":"DEPENDENCY_GATED","required_capabilities":["state.partitioned","value.settlement","lifecycle.periodic","lifecycle.cancel","value.refund"],"required_evidence_refs":["subscription.period-v1","subscription.meter-v1","subscription.cancel-v1","subscription.refund-v1","subscription.covenant-v1","subscription.compiler-v1","subscription.network-policy-v1","subscription.codec-v1","subscription.tn10-admission-v1"],"expected_failure":"PERIOD_METER_REFUND_AMBIGUITY"},
+    {"id":"cross-application-composition","mode":"DEPENDENCY_GATED","required_capabilities":["name.resolve","registry.binding","bridge.binding","state.partitioned"],"required_evidence_refs":["registry.binding-v1","bridge.binding-v1","registry.readback-v1","bridge.readback-v1","owner.application-binding-receipt-v1","cross-application.binding-abi-v1","cross-application.binding-codec-v1","cross-application.deployment-tuple-v1","cross-application.writer-v1","cross-application.successor-readback-v1"],"expected_failure":"REGISTRY_BINDING_DISAGREEMENT"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "KTAPEOUT-REGISTRY-ECONOMICS-V1",
+  "profile_id": "NamespaceNamedLifecycleV6",
+  "profile_semver": "1.0.0",
+  "network": "testnet-10",
+  "contract_source_sha256": "82e9f38bdd590d491bb328ab1766e0f5d6af74d4faffcf9eaa37c99b14661cc6",
+  "sompi_per_kas": 100000000,
+  "deed_state_bond_sompi": 1000000000,
+  "deed_state_bond_semantics": "minimum bondSompi field encoded in the parent Deed state; not an additional child-registration output amount",
+  "name_deed_output_sompi": 100000000,
+  "name_deed_output_semantics": "reference locked amount of the newly issued child Deed output",
+  "adapter_gap_floor_sompi": 100000000,
+  "fee_source": "live_tn10_fee_rate_times_estimated_mass",
+  "refund_path": "NONE_IN_V1"
+}

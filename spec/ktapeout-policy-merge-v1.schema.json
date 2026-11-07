@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/spec/ktapeout-policy-merge-v1.schema.json",
+  "title": "KTAPEOUT PolicyMergeV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_semver", "wallet_modes", "settlement_modes", "authority_scope", "atomicity", "resource_totals", "settlement_boundary", "status", "merge_hash"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-POLICY-MERGE-V1"},
+    "protocol_semver": {"const": "0.5.0"},
+    "wallet_modes": {"type": "array", "maxItems": 8, "items": {"type": "string"}},
+    "settlement_modes": {"type": "array", "maxItems": 32, "items": {"type": "string"}},
+    "authority_scope": {"type": "array", "maxItems": 256, "items": {"type": "string"}},
+    "atomicity": {"enum": ["PER_COMPONENT", "GROUP", "ATOMIC"]},
+    "resource_totals": {"type": "object", "maxProperties": 64, "additionalProperties": {"type": "integer", "minimum": 0}},
+    "settlement_boundary": {"type": "array", "maxItems": 64, "items": {"type": "string"}},
+    "status": {"enum": ["VALID", "UNRESOLVED_CONFLICT"]},
+    "merge_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

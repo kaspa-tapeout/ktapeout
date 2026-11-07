@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/spec/ktapeout-profile-contract-v1.schema.json",
+  "title": "KTAPEOUT ProfileContractV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_semver", "profile_id", "profile_semver", "profile_hash", "publisher_id", "contract_semver", "profile_family", "provides", "requires", "effect_manifest_hash", "authority_scope", "settlement_modes", "wallet_modes", "limitations", "evidence_policy_hash", "contract_hash", "publisher_signature"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-PROFILE-CONTRACT-V1"},
+    "protocol_semver": {"const": "0.5.0"},
+    "profile_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "profile_semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "profile_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "publisher_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "contract_semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "profile_family": {"type": "string", "minLength": 1, "maxLength": 64},
+    "provides": {"type": "array", "maxItems": 128, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 256}},
+    "requires": {"type": "array", "maxItems": 128, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 256}},
+    "effect_manifest_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "authority_scope": {"type": "array", "maxItems": 128, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 256}},
+    "settlement_modes": {"type": "array", "maxItems": 128, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 256}},
+    "wallet_modes": {"type": "array", "maxItems": 128, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 256}},
+    "limitations": {"type": "array", "maxItems": 128, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 256}},
+    "evidence_policy_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "contract_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "publisher_signature": {"type": ["string", "null"], "maxLength": 4096}
+  }
+}

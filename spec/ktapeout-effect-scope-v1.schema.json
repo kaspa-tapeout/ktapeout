@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/spec/ktapeout-effect-scope-v1.schema.json",
+  "title": "KTAPEOUT EffectScopeV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "component_id", "state_root", "selector_kind", "selector", "input_outpoint_scope", "authority_scope", "nonce_scope", "resource_scope", "settlement_scope", "escrow_scope", "access_mode", "ordering_key", "commutativity_proof", "scope_hash"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-EFFECT-SCOPE-V1"},
+    "component_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "state_root": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "selector_kind": {"enum": ["EXACT_KEY", "WILDCARD", "DOMAIN"]},
+    "selector": {"type": "string", "minLength": 1, "maxLength": 256},
+    "input_outpoint_scope": {"type": "array", "maxItems": 64, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+    "authority_scope": {"type": "array", "maxItems": 64, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+    "nonce_scope": {"type": "array", "maxItems": 64, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+    "resource_scope": {"type": "array", "maxItems": 64, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+    "settlement_scope": {"type": "array", "maxItems": 64, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+    "escrow_scope": {"type": "array", "maxItems": 64, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+    "access_mode": {"enum": ["READ", "WRITE", "APPEND", "REDUCE"]},
+    "ordering_key": {"type": ["string", "null"], "maxLength": 128},
+    "commutativity_proof": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "scope_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

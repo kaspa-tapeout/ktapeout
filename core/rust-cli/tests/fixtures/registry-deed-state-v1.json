@@ -1,0 +1,196 @@
+{
+  "schema": "KTAPEOUT-REGISTRY-DEED-STATE-VECTORS-V1",
+  "note": "script_public_key values are the live TN10 UTXO scripts observed on two nodes; invalid cases name the stable error code.",
+  "valid": [
+    {
+      "name": "dagknight live Deed state (chain-attested at 2026-10-25)",
+      "state_args": [
+        1,
+        3,
+        "b64737bde6cbf9da1c8ed540785171f926203926339ac29ea9a169f3fc54a448",
+        "b64737bde6cbf9da1c8ed540785171f926203926339ac29ea9a169f3fc54a449",
+        0,
+        "b64737bde6cbf9da1c8ed540785171f926203926339ac29ea9a169f3fc54a448",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "f5490703173b83d51ebcf53172240ae16923b3e5450d9101803fb1c813db2c16",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "dac700fd74378f83484975119ecde08a2510a7ee04aed8897e63dd8f1d7d20ce",
+        100000000,
+        "f8dbe37435c81fedc3c2a91ef2b13d6b6fe60c45e0e1c9ecc4e7f0cdc84e4d9c",
+        "b9cdbfb106476a616b3532747b8432c1cb1308584e0d4d8bb00dd3ad6093d754",
+        1,
+        867
+      ],
+      "script_public_key": "0000aa20a77f250d36e5aefba74b7b2f2a7913b619f39f0fcb2616b1242fc1ba646e2d1d87"
+    },
+    {
+      "name": "kasnote live Deed state (chain-attested at 2026-10-25)",
+      "state_args": [
+        1,
+        2,
+        "58aba89935c7666067c024db1ce69ac9a4323e2ed5102032a26bcae56954d9e8",
+        "58aba89935c7666067c024db1ce69ac9a4323e2ed5102032a26bcae56954d9e9",
+        0,
+        "58aba89935c7666067c024db1ce69ac9a4323e2ed5102032a26bcae56954d9e8",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "907ae6cf18303442b728d50755919f660db43c2f4b5c3af89f55c136c11634ca",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "dac700fd74378f83484975119ecde08a2510a7ee04aed8897e63dd8f1d7d20ce",
+        100000000,
+        "f8dbe37435c81fedc3c2a91ef2b13d6b6fe60c45e0e1c9ecc4e7f0cdc84e4d9c",
+        "b9cdbfb106476a616b3532747b8432c1cb1308584e0d4d8bb00dd3ad6093d754",
+        1,
+        867
+      ],
+      "script_public_key": "0000aa20eeb981f9f2857e080a55285f78d4368b9478d1a3e4ef9218ebac60a2fbfdf49687"
+    },
+    {
+      "name": "release-canary live Deed state (chain-attested at 2026-10-25)",
+      "state_args": [
+        1,
+        1,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd79",
+        0,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "b882a2ded6803f84de3b26547904a3d43ea7056b9ffef6df0d7004edab0807a7",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "dac700fd74378f83484975119ecde08a2510a7ee04aed8897e63dd8f1d7d20ce",
+        100000000,
+        "f8dbe37435c81fedc3c2a91ef2b13d6b6fe60c45e0e1c9ecc4e7f0cdc84e4d9c",
+        "b9cdbfb106476a616b3532747b8432c1cb1308584e0d4d8bb00dd3ad6093d754",
+        1,
+        867
+      ],
+      "script_public_key": "0000aa20566ddb63bcc278c5a49529f2b43e1b7c8f34386e569b4eb73d2e9a047bf0ba0387"
+    },
+    {
+      "name": "release-canary previous state (chain-attested by the 2026-10-24 receipt)",
+      "state_args": [
+        1,
+        0,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd79",
+        0,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "119c44e92d15946d72fcaa0ae09c951217022aaddcbf0990c0ec756b47f2f270",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "dac700fd74378f83484975119ecde08a2510a7ee04aed8897e63dd8f1d7d20ce",
+        100000000,
+        "f8dbe37435c81fedc3c2a91ef2b13d6b6fe60c45e0e1c9ecc4e7f0cdc84e4d9c",
+        "b9cdbfb106476a616b3532747b8432c1cb1308584e0d4d8bb00dd3ad6093d754",
+        1,
+        867
+      ],
+      "script_public_key": "0000aa20e94e4f87eddc10a5e308ae504fd40d539ec4c5a3dbdbee7775566ba3260016d487"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "not a deed",
+      "state_args": [
+        0,
+        1,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd79",
+        0,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "b882a2ded6803f84de3b26547904a3d43ea7056b9ffef6df0d7004edab0807a7",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "dac700fd74378f83484975119ecde08a2510a7ee04aed8897e63dd8f1d7d20ce",
+        100000000,
+        "f8dbe37435c81fedc3c2a91ef2b13d6b6fe60c45e0e1c9ecc4e7f0cdc84e4d9c",
+        "b9cdbfb106476a616b3532747b8432c1cb1308584e0d4d8bb00dd3ad6093d754",
+        1,
+        867
+      ],
+      "error": "DEED_STATE_REQUIRED"
+    },
+    {
+      "name": "hash not canonical hex",
+      "state_args": [
+        1,
+        1,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd79",
+        0,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "B882A2DED6803F84DE3B26547904A3D43EA7056B9FFEF6DF0D7004EDAB0807A7",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "dac700fd74378f83484975119ecde08a2510a7ee04aed8897e63dd8f1d7d20ce",
+        100000000,
+        "f8dbe37435c81fedc3c2a91ef2b13d6b6fe60c45e0e1c9ecc4e7f0cdc84e4d9c",
+        "b9cdbfb106476a616b3532747b8432c1cb1308584e0d4d8bb00dd3ad6093d754",
+        1,
+        867
+      ],
+      "error": "STATE_HASH_7_NON_CANONICAL"
+    },
+    {
+      "name": "hash too short",
+      "state_args": [
+        1,
+        1,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd79",
+        0,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "ab",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "dac700fd74378f83484975119ecde08a2510a7ee04aed8897e63dd8f1d7d20ce",
+        100000000,
+        "f8dbe37435c81fedc3c2a91ef2b13d6b6fe60c45e0e1c9ecc4e7f0cdc84e4d9c",
+        "b9cdbfb106476a616b3532747b8432c1cb1308584e0d4d8bb00dd3ad6093d754",
+        1,
+        867
+      ],
+      "error": "STATE_HASH_7_NON_CANONICAL"
+    },
+    {
+      "name": "negative integer",
+      "state_args": [
+        1,
+        -1,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd79",
+        0,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "b882a2ded6803f84de3b26547904a3d43ea7056b9ffef6df0d7004edab0807a7",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "dac700fd74378f83484975119ecde08a2510a7ee04aed8897e63dd8f1d7d20ce",
+        100000000,
+        "f8dbe37435c81fedc3c2a91ef2b13d6b6fe60c45e0e1c9ecc4e7f0cdc84e4d9c",
+        "b9cdbfb106476a616b3532747b8432c1cb1308584e0d4d8bb00dd3ad6093d754",
+        1,
+        867
+      ],
+      "error": "STATE_INTEGER_1_INVALID"
+    },
+    {
+      "name": "fourteen arguments",
+      "state_args": [
+        1,
+        1,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd79",
+        0,
+        "4fb442ac8c0159800b7dbd5dadca5d913352a2722de1cba423e0c8b9b3b4dd78",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "b882a2ded6803f84de3b26547904a3d43ea7056b9ffef6df0d7004edab0807a7",
+        "7eff588487b26ba65b326b2e54c88d97a7125e95a0fa751f10ff2a3369fb138d",
+        "dac700fd74378f83484975119ecde08a2510a7ee04aed8897e63dd8f1d7d20ce",
+        100000000,
+        "f8dbe37435c81fedc3c2a91ef2b13d6b6fe60c45e0e1c9ecc4e7f0cdc84e4d9c",
+        "b9cdbfb106476a616b3532747b8432c1cb1308584e0d4d8bb00dd3ad6093d754",
+        1
+      ],
+      "error": "STATE_ARGS_INVALID"
+    }
+  ]
+}

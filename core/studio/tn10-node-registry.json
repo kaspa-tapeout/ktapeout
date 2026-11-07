@@ -1,0 +1,12 @@
+{
+  "schema": "KTAPEOUT-TN10-NODE-REGISTRY-V1",
+  "network": "testnet-10",
+  "protocol_path": "/kaspa/testnet-10/wrpc/borsh",
+  "nodes": {
+    "neutrino-10": { "host": "neutrino-10.kaspa.stream" },
+    "quark-10": { "host": "quark-10.kaspa.red" },
+    "proton-10": { "host": "proton-10.kaspa.stream" },
+    "vector-10": { "host": "vector-10.kaspa.green" },
+    "muon-10": { "host": "muon-10.kaspa.blue" }
+  }
+}

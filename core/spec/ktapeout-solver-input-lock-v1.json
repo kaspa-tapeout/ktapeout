@@ -1,0 +1,10 @@
+{
+  "schema": "KTAPEOUT-SOLVER-INPUT-LOCK-V1",
+  "protocol_semver": "0.5.0",
+  "naming_registry_hash": "a1f0713bdc0dbfd8efb58778132049950778052aade93b392055cbde524e6516",
+  "guidance_catalog_hash": "75621e2d7c8cf141a886176939e9a9794235b40f553858f6a8d6163f338f9945",
+  "scenario_corpus_sha256": "a4d1c4c8a0848a78bfed4ddf45eabd2055c372cfc715e42b35060b43f18cf3d4",
+  "error_taxonomy": "KTAPEOUT-ERROR-CODES-V0.5.0",
+  "error_taxonomy_sha256": "7bb2d0d7cd04a0f36481238de00c8a82be27b4bc29b5917049c83c6de8747f86",
+  "lock_hash": "d63823cdd6d2a83ff9b26923c8d6522f4992452f17a51359a564828d9ffbcc50"
+}

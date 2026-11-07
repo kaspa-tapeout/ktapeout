@@ -1,0 +1,23 @@
+{
+  "schema": "KTAPEOUT-REGISTERED-KEYS-V1",
+  "network": "testnet-10",
+  "sequence": 1,
+  "updated_at": "2026-11-01T00:00:00Z",
+  "keys": [
+    {
+      "namespace": "ktape",
+      "key_hex": "71c1a804eaa66294514d16f8e134aae7b7c147732888a3031660910158878332",
+      "evidence_ref": "dd946349999b2c501525570202190dcac37d99595401a886460128384cf42152"
+    },
+    {
+      "namespace": "ktapedemo",
+      "key_hex": "f8dbe37435c81fedc3c2a91ef2b13d6b6fe60c45e0e1c9ecc4e7f0cdc84e4d9c",
+      "evidence_ref": "8c70372d56241187beaefd65642399888e602beeb49a57da24952cbbe189df5e"
+    },
+    {
+      "namespace": "ktapeout",
+      "key_hex": "9c6f883a822ff190c1a823800a86d1b1429e8bb60972f6c912644b01a8cf5904",
+      "evidence_ref": "662cbd0cd2603cc122c484e3fd41b995c82499d04bafda86855040277fb047f6"
+    }
+  ]
+}

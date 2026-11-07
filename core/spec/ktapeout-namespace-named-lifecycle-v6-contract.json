@@ -1,0 +1,24 @@
+{
+  "codec_id": "namespace-named-lifecycle-candidate-v6",
+  "wire_version": 6,
+  "status": "ENGINEERING_CANDIDATE_NOT_L1_ADMITTED",
+  "network": "testnet-10",
+  "base_contract": "ktapeout-namespace-lifecycle-v5-contract.json",
+  "base_manifest_sha256": "aa7e7b21c6db6db43ff58ea140786612576ed25fd8082557128f2cc9859539ef",
+  "source_functions": {"parent": "source_recovery_parent_v4", "child": "source_gap_writer_named_recovery_v6"},
+  "name_encoding": {
+    "codec_id": "namespace-name-sha256-frame-candidate-v1",
+    "namespace_domain_ascii": "KTAPEOUT/0.5.0/NAMESPACE_FRAME/V1",
+    "name_domain_ascii": "KTAPEOUT/0.5.0/NAME_FRAME/V1",
+    "domain_terminator_hex": "00",
+    "network_code_hex": "0a",
+    "frame_bytes": 64,
+    "canonical_frame": "length:u8 || lowercase_ascii_slug || zero_padding_to_63",
+    "namespace_preimage": "namespace_domain || 00 || 0a || namespace_frame",
+    "name_preimage": "name_domain || 00 || 0a || namespace_frame || slug_frame",
+    "l1_validation": "opaque_fixed_width_frames_and_exact_hash_binding",
+    "presentation_validation": "strict_canonical_ascii_no_normalization"
+  },
+  "registration_witness_extra_arguments": ["namespaceFrame", "slugFrame"],
+  "identity_limits": ["isolated_lineage_not_global_namespace_uniqueness", "not_an_official_namespace_deployment", "no_implicit_legacy_migration"]
+}

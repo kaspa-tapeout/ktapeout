@@ -1,0 +1,15 @@
+[package]
+name = "ktapeout-kaspa-verifier"
+version = "0.5.0"
+edition = "2021"
+license = "MIT"
+publish = false
+description = "Trusted-host, offline Kaspa Safe-JSON and input-script verifier for KTAPEOUT 0.5.0"
+
+[dependencies]
+ktapeout-core = { path = "../rust-core" }
+kaspa-consensus-client = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+kaspa-txscript = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"

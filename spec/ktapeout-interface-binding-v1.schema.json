@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/spec/ktapeout-interface-binding-v1.schema.json",
+  "title": "KTAPEOUT InterfaceBindingV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "interface_id", "interface_version", "consumer", "provider", "input_schema_hash", "output_schema_hash", "error_schema_hash", "wallet_mode", "settlement_mode", "adapter_hash"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-INTERFACE-BINDING-V1"},
+    "interface_id": {"type": "string", "maxLength": 128},
+    "interface_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "consumer": {"type": "string", "maxLength": 128},
+    "provider": {"type": "string", "maxLength": 128},
+    "input_schema_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "output_schema_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "error_schema_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "wallet_mode": {"enum": ["wallet", "walletless-read"]},
+    "settlement_mode": {"type": "string", "minLength": 1, "maxLength": 128},
+    "adapter_hash": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
+  }
+}

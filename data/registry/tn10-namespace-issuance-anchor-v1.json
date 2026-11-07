@@ -1,0 +1,13 @@
+{
+  "schema": "KTAPEOUT-NAMESPACE-ISSUANCE-TRUST-ANCHOR-V1",
+  "network": "testnet-10",
+  "profile_id": "NamespaceIssuanceV1",
+  "profile_version": 1,
+  "covenant_id": "cca7e8c70514fa532942bb6847c7f6ab02f6d513b277507aa0be9747fc0a90d7",
+  "genesis_outpoint": "dacf6d963d4da2539dc3a1118e1bbba9304f015185f017fb5bb4affac2ad35e7:0",
+  "source_sha256": "d18528abbaffd2b77694480266ae524fcffb61dbc8510480c11e327f84a44af5",
+  "child_manifest_sha256": "3018058b2b251d54201bcfcd45a958e2b9bf066c483bc23e482173bc3c0802f6",
+  "namespace_reallocation": false,
+  "certificate_carrier_sompi": 100000000,
+  "manifest_digest": "1945ffc572849263c72f183d261289abe9f3ddc3d136aa54f2bee49917a14e00"
+}

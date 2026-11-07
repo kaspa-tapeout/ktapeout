@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/spec/ktapeout-effect-manifest-v1.schema.json",
+  "title": "KTAPEOUT EffectManifestV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_semver", "profile_id", "profile_hash", "effects", "effect_hash"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-EFFECT-MANIFEST-V1"},
+    "protocol_semver": {"const": "0.5.0"},
+    "profile_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "profile_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "effects": {
+      "type": "array", "minItems": 1, "maxItems": 256,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["effect_id", "state_root", "selector_kind", "selector", "access_mode", "ordering_key", "commutativity_proof"],
+        "properties": {
+          "effect_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+          "state_root": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+          "selector_kind": {"enum": ["EXACT_KEY", "WILDCARD", "DOMAIN"]},
+          "selector": {"type": "string", "minLength": 1, "maxLength": 512},
+          "access_mode": {"enum": ["READ", "WRITE", "APPEND", "REDUCE"]},
+          "ordering_key": {"type": ["string", "null"], "maxLength": 256},
+          "commutativity_proof": {"type": ["string", "null"], "maxLength": 256}
+        }
+      }
+    },
+    "effect_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

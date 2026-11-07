@@ -1,0 +1,18 @@
+{
+  "schema": "KTAPEOUT-FEATURE-VECTORS-V0.5.0",
+  "algorithm": "SHA-256(KTAPEOUT/0.5.0/FEATURE_SET/V1 || 0x00 || count:uint16_le || repeated length:uint16_le || identifier_utf8)",
+  "vectors": [
+    {
+      "id": "feature-empty",
+      "features": [],
+      "canonical_bytes_hex": "4b544150454f55542f302e352e302f464541545552455f5345542f5631000000",
+      "root": "beb1a2616d2ce4c153357bbe90e410629aa6f38048b2217386279c79027cc37f"
+    },
+    {
+      "id": "feature-critical-core",
+      "features": ["collective.seal.v1", "partition.action.v1", "partition.layout.v1"],
+      "canonical_bytes_hex": "4b544150454f55542f302e352e302f464541545552455f5345542f56310003001200636f6c6c6563746976652e7365616c2e76311300706172746974696f6e2e616374696f6e2e76311300706172746974696f6e2e6c61796f75742e7631",
+      "root": "1c1122d03542f6b7386696c1df0f0b003b20d380bab7599578711b68e9615c85"
+    }
+  ]
+}

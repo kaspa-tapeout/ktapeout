@@ -1,0 +1,14 @@
+/target/
+**/target/
+__pycache__/
+*.pyc
+.DS_Store
+my-app/
+out/
+.env
+*.pem
+*.key
+.agents/
+.build-cache/
+.idea/
+.vscode/

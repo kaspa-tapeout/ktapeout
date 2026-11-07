@@ -1,0 +1,15 @@
+{
+  "schema_version": "KTAPEOUT-0.5.0-SOURCE-APPLICATION-MANIFEST-V1",
+  "source_kind": "StateMachine",
+  "source_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+  "declared_purpose": "A bounded counter demonstrating A0 single-object state progression.",
+  "inputs": [{"name": "increment", "type": "u8"}],
+  "outputs": [{"name": "value", "type": "u32"}],
+  "persistent_state": [{"name": "value", "type": "u32"}],
+  "authorities": [{"id": "owner", "capabilities": ["step"]}],
+  "external_dependencies": [],
+  "value_flows": [],
+  "availability_expectations": [],
+  "test_vectors": [{"input": {"increment": 1}, "output": {"value": 1}}],
+  "atomicity_class": "A0"
+}

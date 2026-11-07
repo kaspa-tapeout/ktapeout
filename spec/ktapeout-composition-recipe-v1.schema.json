@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktapeout.org/spec/ktapeout-composition-recipe-v1.schema.json",
+  "title": "KTAPEOUT CompositionRecipeV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_semver", "recipe_id", "recipe_semver", "components", "interface_bindings", "state_namespaces", "resource_policy", "settlement_policy", "test_vectors", "recipe_hash"],
+  "properties": {
+    "schema": {"const": "KTAPEOUT-COMPOSITION-RECIPE-V1"},
+    "protocol_semver": {"const": "0.5.0"},
+    "recipe_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "recipe_semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "components": {
+      "type": "array", "minItems": 1, "maxItems": 128,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["component_id", "profile_id", "profile_hash", "contract_hash", "package_digest"],
+        "properties": {
+          "component_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+          "profile_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+          "profile_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "contract_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "package_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "interface_bindings": {"type": "array", "maxItems": 256},
+    "typed_interface_bindings": {"type": "array", "maxItems": 256, "items": {"$ref": "ktapeout-interface-binding-v1.schema.json"}},
+    "external_requirements": {"type": "array", "maxItems": 256, "items": {"type": "object", "additionalProperties": false, "required": ["consumer", "requirement", "source", "evidence_policy_hash"], "properties": {"consumer": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}, "requirement": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}, "source": {"type": "string", "maxLength": 256}, "evidence_policy_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}},
+    "effect_scopes": {"type": "array", "maxItems": 256, "items": {"$ref": "ktapeout-effect-scope-v1.schema.json"}},
+    "policy_merge": {"$ref": "ktapeout-policy-merge-v1.schema.json"},
+    "interface_execution_status": {"enum": ["NOT_REQUESTED", "STATIC_ONLY"]},
+    "state_namespaces": {"type": "array", "maxItems": 256},
+    "resource_policy": {"type": "object"},
+    "settlement_policy": {"type": "object"},
+    "test_vectors": {"type": "array", "maxItems": 256},
+    "effect_graph": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema", "proof", "nodes", "edges"],
+      "properties": {
+        "schema": {"const": "KTAPEOUT-EFFECT-GRAPH-V1"},
+        "proof": {"const": "LOCAL_PAIRWISE_EFFECT_CHECK_V1"},
+        "nodes": {"type": "array", "maxItems": 128, "items": {"type": "object", "additionalProperties": false, "required": ["component_id", "profile_hash", "effect_hash"], "properties": {"component_id": {"type": "string"}, "profile_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "effect_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}},
+        "edges": {"type": "array", "maxItems": 8128, "items": {"type": "object", "additionalProperties": false, "required": ["left_component", "right_component", "relation"], "properties": {"left_component": {"type": "string"}, "right_component": {"type": "string"}, "relation": {"const": "NON_CONFLICTING_UNDER_DECLARED_EFFECTS"}}}}
+      }
+    },
+    "publisher_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "publisher_signature": {"type": "string", "maxLength": 4096},
+    "recipe_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
