@@ -7,7 +7,7 @@
 
 KTAPEOUT connects application identity, reusable components, development tools, testing, and on-chain publication. This developer preview contains the protocol, Rust Core, tools, examples, and documentation for a limited Testnet-10 and local workflow.
 
-[![Developer preview · Testnet-10 only](docs/assets/badge-preview.svg)](docs/reference/capabilities-and-status.md) [![CI workflow](docs/assets/badge-ci.svg)](.github/workflows/ci.yml)
+<a href="docs/reference/capabilities-and-status.md"><img src="docs/assets/badge-preview.svg" alt="Developer preview · Testnet-10 only" height="20"></a> <a href=".github/workflows/ci.yml"><img src="docs/assets/badge-ci.svg" alt="CI workflow" height="20"></a>
 
 **Preview boundary:** Testnet-10 only · Not a security audit · Not a Mainnet release · **Review:** Codex author review (not independent). The security reporting channel is enabled but has not been tested end to end.
 
