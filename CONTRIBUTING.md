@@ -62,3 +62,9 @@ requirements crosswalk and an explicit compatibility note.
 Maintainer release checks additionally cover language, public-tree hygiene,
 secret scanning and dependencies. These internal gates are distinct from
 commands available in a developer's clean public checkout.
+
+## Repository setup
+
+The workflow checks the locked generic CLI and its local Rust dependencies.
+Branch protection and private vulnerability reporting are remote repository
+settings. This guide does not state whether either setting is enabled.
