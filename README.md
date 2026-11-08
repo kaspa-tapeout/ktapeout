@@ -1,8 +1,53 @@
-# KTAPEOUT 0.5.0 (developer preview, TN10 only)
+# KTAPEOUT 0.5.0 · Developer preview
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
+  <img src="docs/assets/banner-light.svg" alt="KTAPEOUT developer preview: protocol, Rust Core, tools, and examples for Testnet-10">
+</picture>
+
+KTAPEOUT connects application identity, reusable components, development tools, testing, and on-chain publication. This developer preview contains the protocol, Rust Core, tools, examples, and documentation for a limited Testnet-10 and local workflow.
+
+[![Developer preview · Testnet-10 only](docs/assets/badge-preview.svg)](docs/reference/capabilities-and-status.md) [![CI workflow](docs/assets/badge-ci.svg)](.github/workflows/ci.yml)
+
+**Preview boundary:** Testnet-10 only · Not a security audit · Not a Mainnet release · **Review:** Codex author review (not independent). The security reporting channel is enabled but has not been tested end to end.
+
+## Start here
+
+Run these documented commands from the repository root. The starter workflow reports incomplete stages, and its test is structural only; neither runs application behavior.
+
+```sh
+cargo run --locked -p ktapeout-cli -- init --template StateMachine --network testnet-10 --output ./my-app
+cargo run --locked -p ktapeout-cli -- dev workflow ./my-app/workflow.json
+cargo run --locked -p ktapeout-cli -- app test ./my-app/source-manifest.json
+```
+
+## Verified capabilities
+
+| Capability | Evidence level | What the evidence establishes |
+|---|---|---|
+| Build a deterministic application package locally | ![LOCAL_OK evidence](docs/assets/badge-local-ok.svg) | Repeated local builds produced the same package digest; no upload or publication. |
+| Anchor and read back a Testnet-10 artifact root | ![LIVE_TN10 evidence](docs/assets/badge-live-tn10.svg) | Documented transactions; not rechecked online for this preview. The payload is not stored on chain. |
+| Native registration authorization, signing, and assembly | ![MOCK_OR_VM evidence](docs/assets/badge-mock-or-vm.svg) | Test fixtures and VM coverage; no live name-registration submission. |
+| V6 name-registration reference assembly | ![MOCK_OR_VM evidence](docs/assets/badge-mock-or-vm.svg) | Pinned VM and saved-vector checks; not an end-to-end CompactV1 registration. |
+
+Evidence legend: `LOCAL_OK` = deterministic local evidence; `LIVE_TN10` = documented Testnet-10 evidence; `MOCK_OR_VM` = fixture or virtual-machine evidence.
+See the full [capabilities and status matrix](docs/reference/capabilities-and-status.md) for scope and evidence details.
+
+## Not included in this preview
+
+- Studio, Browser SDK, or wallet providers.
+- A name publication flow for developers.
+- Namespace issuance or CompactV1 name registration for `ktape`, `ktapedemo`, or `ktapeout`.
+- Payload storage adapters, including HTTPS, Arweave, Google Drive, or R2.
+- A hosted demo or an online product. The `ktapeout.xyz` site has not been updated as part of this preview.
+
+---
+
+## Technical overview
 
 **Developer preview · Testnet-10 only · Mainnet release: unavailable.** Not a security audit. Dependency audit is non-clean under disclosed, time-limited exceptions (see DEPENDENCY-AUDIT.md).
 
-**Website:** [ktapeout.xyz](https://ktapeout.xyz) · **GitHub:** [KTAPEOUT](https://github.com/kaspa-tapeout/ktapeout) · **Live applications:** [Application directory](https://ktapeout.xyz/applications) · **Guides:** [Developer documentation](https://ktapeout.xyz/docs)
+**GitHub:** [KTAPEOUT](https://github.com/kaspa-tapeout/ktapeout) · **Documentation:** [Developer documentation index](docs/index.md)
 
 KTAPEOUT is an open application platform for Kaspa, built on the KTAPEOUT 0.5.0
 protocol. This candidate provides protocol documentation, local Rust
@@ -198,3 +243,4 @@ production retention and cross-device recovery are not release claims.
 The dependency audit retains a disclosed, version-specific maintainer exception;
 report vulnerabilities through GitHub private vulnerability reporting (see
 SECURITY.md).
+
