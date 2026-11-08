@@ -7,11 +7,17 @@
 
 KTAPEOUT connects application identity, reusable components, development tools, testing, and on-chain publication. This developer preview contains the protocol, Rust Core, tools, examples, and documentation for a limited Testnet-10 and local workflow.
 
+**Repository and website:** this repository contains the protocol and tools; [ktapeout.xyz](https://ktapeout.xyz) hosts running demos.
+
+**Quick links:** [Website](https://ktapeout.xyz) · [Live demo (DAG Knight)](https://ktapeout.xyz/app/testnet-10/ktapedemo/game-dagknight) · [KasNote](https://ktapeout.xyz/app/testnet-10/ktapedemo/kasnote) · [Registry](https://ktapeout.xyz/app/testnet-10/ktape/registry) · [Docs](docs/index.md) · [Capabilities](docs/reference/capabilities-and-status.md) · [Releases](https://github.com/kaspa-tapeout/ktapeout/releases) · [Security](SECURITY.md) · [Issues](https://github.com/kaspa-tapeout/ktapeout/issues)
+
 <a href="docs/reference/capabilities-and-status.md"><img src="docs/assets/badge-preview.svg" alt="Developer preview · Testnet-10 only" height="20"></a> <a href=".github/workflows/ci.yml"><img src="docs/assets/badge-ci.svg" alt="CI workflow" height="20"></a>
 
 **Preview boundary:** Testnet-10 only · Not a security audit · Not a Mainnet release · **Review:** Codex author review (not independent). The security reporting channel is enabled but has not been tested end to end.
 
 ## Start here
+
+Prerequisite: Rust toolchain 1.91.0, pinned in [`rust-toolchain.toml`](rust-toolchain.toml).
 
 Run these documented commands from the repository root. The starter workflow reports incomplete stages, and its test is structural only; neither runs application behavior.
 
@@ -35,11 +41,11 @@ See the full [capabilities and status matrix](docs/reference/capabilities-and-st
 
 ## Not included in this preview
 
-- Studio, Browser SDK, or wallet providers.
+- This repository does not include Studio, Browser SDK, or wallet providers. ktapeout.xyz provides independent Testnet-10 demos; browsing requires no wallet. The demo frontend source is not in this repository, and its version may differ from this preview.
 - A name publication flow for developers.
 - Namespace issuance or CompactV1 name registration for `ktape`, `ktapedemo`, or `ktapeout`.
 - Payload storage adapters, including HTTPS, Arweave, Google Drive, or R2.
-- A hosted demo or an online product. The `ktapeout.xyz` site has not been updated as part of this preview.
+- The capabilities and status matrix is authoritative for what this preview establishes; it does not establish that developers can register and publish names end to end.
 
 ---
 
