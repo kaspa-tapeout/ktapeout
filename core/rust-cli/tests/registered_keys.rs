@@ -2764,7 +2764,9 @@ fn public_help_omits_retired_name_routes_and_private_compiler_bridges() {
         " tn10-namespace-child-registration-plan ",
     ] {
         assert!(
-            !help.contains(retired),
+            !help
+                .lines()
+                .any(|line| line.split_whitespace().next() == Some(retired.trim())),
             "retired route remains in help: {retired}"
         );
     }

@@ -58,6 +58,7 @@ tokio = { version = "1", features = ["rt-multi-thread", "time"], optional = true
 ktapeout-runtime = { path = "../rust-runtime" }
 ktapeout-core = { path = "../rust-core" }
 ktapeout-kaspa-verifier = { path = "../rust-kaspa-verifier" }
+ktapeout-registry-issuer = { path = "../adapters/registry-issuer" }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Storage_FileSystem"] }

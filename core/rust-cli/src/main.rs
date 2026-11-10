@@ -238,6 +238,22 @@ enum Tn10Action {
         #[arg(long)]
         allow_readback: bool,
     },
+    /// Create a bounded, terminal-confirmed authorization for a namespace issuance transition.
+    #[cfg(feature = "developer-signing")]
+    AuthorizeNamespaceTransition {
+        plan: PathBuf,
+        output: PathBuf,
+        #[arg(long = "node", required = true, num_args = 2)]
+        nodes: Vec<String>,
+        #[arg(long, required = true)]
+        max_total_sompi: u64,
+        #[arg(long, required = true)]
+        max_fee_sompi: u64,
+        #[arg(long, required = true)]
+        expires_utc: String,
+        #[arg(long, action = clap::ArgAction::SetTrue)]
+        allow_broadcast: bool,
+    },
     /// Sign offline using a local secret, or import an external signature; explicit approval required.
     #[cfg(feature = "developer-signing")]
     Sign {
@@ -274,6 +290,15 @@ enum Tn10Action {
     Submit {
         signed: PathBuf,
         output: PathBuf,
+        #[arg(long)]
+        retry_same_txid: bool,
+    },
+    /// Submit a revalidated namespace transition; unknown retries require matching two-node readback.
+    SubmitNamespaceTransition {
+        signed: PathBuf,
+        output: PathBuf,
+        #[arg(long = "node", required = true, num_args = 2)]
+        nodes: Vec<String>,
         #[arg(long)]
         retry_same_txid: bool,
     },
@@ -743,6 +768,18 @@ enum DeployAction {
 
 #[derive(Debug, Subcommand)]
 enum NameAction {
+    /// Show the pinned TN10 registry identity and historical economics; does not query or sign.
+    RegistryInfo,
+    /// Create a single-use TN10 test key under the system temp directory; never prints the secret.
+    #[cfg(all(feature = "developer-signing", feature = "tn10-network"))]
+    TestKeygen {
+        output: PathBuf,
+    },
+    /// Derive public TN10 key information from a protected local key file without exposing the secret.
+    #[cfg(all(feature = "developer-signing", feature = "tn10-network"))]
+    TestKeyInfo {
+        key_file: PathBuf,
+    },
     Normalize {
         uri: String,
         #[arg(long)]
@@ -790,6 +827,54 @@ enum NameAction {
         /// Distinct local escrow roots; at least two are required.
         #[arg(long = "escrow-dir", required = true)]
         escrow_dirs: Vec<PathBuf>,
+    },
+    /// Build an unsigned TN10 namespace issuance plan from public UTXO context.
+    IssuancePlan {
+        /// Public request JSON with the ktape registry root Gap, pre-authorized parent, and fee UTXOs.
+        request: PathBuf,
+        /// Write the deterministic plan. No keys are accepted and no network submission occurs.
+        output: PathBuf,
+    },
+    /// Prepare, verify public signature packets, or assemble a TN10 issuance transition offline.
+    IssuanceTransition {
+        #[arg(value_parser = ["plan", "sign", "verify", "assemble"])]
+        phase: String,
+        /// Public transition request, or plan plus public signature packets.
+        request: PathBuf,
+        output: PathBuf,
+        /// Terminal-confirmed transition authorization created with `tn10 authorize-namespace-transition`.
+        #[arg(long)]
+        authorization: Option<PathBuf>,
+        /// Read the developer's local signing key from a protected file.
+        #[arg(long = "key-file", conflicts_with = "key_stdin")]
+        key_path: Option<PathBuf>,
+        /// Read the developer's local signing key from standard input.
+        #[arg(long = "key-stdin", conflicts_with = "key_path")]
+        key_stdin: bool,
+    },
+    /// Build the developer-funded TN10 parent and initial Gap under a pinned registry root.
+    ParentGenesisPlan {
+        /// Public request JSON with a canonical namespace frame, root identity and funding UTXO.
+        request: PathBuf,
+        /// Write the unsigned genesis-group plan; no key or RPC is accepted.
+        output: PathBuf,
+    },
+    /// Prepare, sign, verify, or assemble the developer-owned parent genesis offline.
+    ParentGenesisTransition {
+        #[arg(value_parser = ["plan", "sign", "verify", "assemble"])]
+        phase: String,
+        /// Public request for `plan`, or a plan with public packets for later phases.
+        request: PathBuf,
+        output: PathBuf,
+        /// Terminal-confirmed transition authorization created with `tn10 authorize-namespace-transition`.
+        #[arg(long)]
+        authorization: Option<PathBuf>,
+        /// Read the developer's local signing key from a protected file.
+        #[arg(long = "key-file", conflicts_with = "key_stdin")]
+        key_path: Option<PathBuf>,
+        /// Read the developer's local signing key from standard input.
+        #[arg(long = "key-stdin", conflicts_with = "key_path")]
+        key_stdin: bool,
     },
     /// Keyless completeness plan: the Gaps that must be live when `--key` lists every Deed and reserved key.
     SpacePlan {
@@ -1895,6 +1980,92 @@ fn authorize_native_plan(
     file.write_all(&bytes)
         .and_then(|_| file.sync_all())
         .map_err(|error| format!("TN10_AUTHORIZE_OUTPUT_WRITE_FAILED:{error}"))
+}
+
+#[cfg(all(feature = "tn10-network", feature = "developer-signing"))]
+fn authorize_namespace_transition(
+    plan_path: &Path,
+    output: &Path,
+    nodes: &[String],
+    max_total_sompi: u64,
+    max_fee_sompi: u64,
+    expires_utc: &str,
+    allow_broadcast: bool,
+) -> Result<(), String> {
+    use std::io::{IsTerminal, Write};
+    if output.exists() {
+        return Err("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_OUTPUT_EXISTS".into());
+    }
+    if !std::io::stdin().is_terminal() {
+        return Err("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_TERMINAL_REQUIRED".into());
+    }
+    if !allow_broadcast {
+        return Err("TN10_NAMESPACE_TRANSITION_BROADCAST_CONSENT_REQUIRED".into());
+    }
+    if !expires_utc.ends_with('Z') {
+        return Err("TN10_NAMESPACE_TRANSITION_EXPIRY_MUST_BE_UTC".into());
+    }
+    let expires_at = chrono::DateTime::parse_from_rfc3339(expires_utc)
+        .map_err(|_| "TN10_NAMESPACE_TRANSITION_EXPIRY_INVALID")?
+        .timestamp()
+        .try_into()
+        .map_err(|_| "TN10_NAMESPACE_TRANSITION_EXPIRY_INVALID")?;
+    let document = read_json(plan_path)?;
+    let fee_quote = ktapeout_cli::tn10_pipeline::namespace_transition_fee_quote(nodes)
+        .map_err(|error| error.to_string())?;
+    // Compare the returned observation against a clock sampled after the network request.
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|_| "TN10_CLOCK_INVALID")?
+        .as_secs();
+    let review = ktapeout_cli::tn10_pipeline::prepare_namespace_transition_authorization(
+        &document,
+        &fee_quote,
+        max_total_sompi,
+        max_fee_sompi,
+        expires_at,
+        now,
+        true,
+    )
+    .map_err(|error| error.to_string())?;
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&review).map_err(|error| error.to_string())?
+    );
+    let plan_hash = review["native_plan_hash"]
+        .as_str()
+        .ok_or("TN10_NAMESPACE_TRANSITION_PLAN_INVALID")?;
+    let expected = format!("AUTHORIZE {plan_hash}");
+    print!("Type {expected} to authorize this exact TN10 transition: ");
+    std::io::stdout()
+        .flush()
+        .map_err(|error| error.to_string())?;
+    let mut confirmation = String::new();
+    std::io::stdin()
+        .read_line(&mut confirmation)
+        .map_err(|error| error.to_string())?;
+    let authorization = ktapeout_cli::tn10_pipeline::create_namespace_transition_authorization(
+        &document,
+        &fee_quote,
+        max_total_sompi,
+        max_fee_sompi,
+        true,
+        ktapeout_cli::tn10_pipeline::NamespaceTransitionAuthorizationConfirmation {
+            expires_at_unix: expires_at,
+            now_unix: now,
+            confirmation: confirmation.trim(),
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    let bytes = serde_json::to_vec_pretty(&authorization).map_err(|error| error.to_string())?;
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(output)
+        .map_err(|error| format!("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_WRITE_FAILED:{error}"))?;
+    file.write_all(&bytes)
+        .and_then(|_| file.sync_all())
+        .map_err(|error| format!("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_WRITE_FAILED:{error}"))
 }
 
 fn read_json(path: &Path) -> Result<Value, String> {
@@ -3510,19 +3681,36 @@ fn profile_upgrade_plan(old_path: PathBuf, new_path: PathBuf) -> Result<(), Stri
     let (classification, status, requires_migration, signable, reason, next_action) = if old_id
         != new_id
     {
-        ("REPLACEMENT", "REVIEW_REQUIRED", false, false, "profile identity changed; this is a new application/profile, not an in-place upgrade", "register a separate Application/Release; do not mutate or migrate the old identity implicitly")
+        (
+            "REPLACEMENT",
+            "REVIEW_REQUIRED",
+            false,
+            false,
+            "profile identity changed; this is a new application/profile, not an in-place upgrade",
+            "register a separate Application/Release; do not mutate or migrate the old identity implicitly",
+        )
     } else if old.get("profile_hash") == new.get("profile_hash") {
         if old.get("package_digest") == new.get("package_digest") {
             return Err("PROFILE_UPGRADE_IDENTICAL_PACKAGES".into());
         }
         if governance_changed {
-            ("CONTRACT_CHANGE", "REVIEW_REQUIRED", false, false,
+            (
+                "CONTRACT_CHANGE",
+                "REVIEW_REQUIRED",
+                false,
+                false,
                 "profile descriptor is unchanged but the publisher-bound Contract/effect commitment changed; create a new Release binding",
-                "create a new immutable Release binding; do not reinterpret the old Release or claim a state migration")
+                "create a new immutable Release binding; do not reinterpret the old Release or claim a state migration",
+            )
         } else {
-            ("DOCUMENTATION_ONLY", "VALID", false, false,
+            (
+                "DOCUMENTATION_ONLY",
+                "VALID",
+                false,
+                false,
                 "profile descriptor and governance commitments are unchanged; package/UI/documentation changed only",
-                "refresh local package metadata; retain existing Release and lock compatibility")
+                "refresh local package metadata; retain existing Release and lock compatibility",
+            )
         }
     } else {
         let old_version = semver(
@@ -3571,7 +3759,14 @@ fn profile_upgrade_plan(old_path: PathBuf, new_path: PathBuf) -> Result<(), Stri
             }
         }
         if changed.is_empty() {
-            ("PATCH_COMPATIBLE", "VALID", false, true, "descriptor changed without changing declared state-transition compatibility fields", "create a new immutable Release, rebuild the lock and run static/network preflight")
+            (
+                "PATCH_COMPATIBLE",
+                "VALID",
+                false,
+                true,
+                "descriptor changed without changing declared state-transition compatibility fields",
+                "create a new immutable Release, rebuild the lock and run static/network preflight",
+            )
         } else {
             (
                 "STATE_MIGRATION",
@@ -3827,9 +4022,17 @@ fn runtime_replay(bundle_path: PathBuf, runtime_path: PathBuf) -> Result<(), Str
             "retain the verified historical evidence",
         )
     } else if plan.contains(old) {
-        ("PLAN_COMPATIBLE", "PLAN_REBUILDABLE", "regenerate the unsigned plan with the current Runtime before any sign or publish operation")
+        (
+            "PLAN_COMPATIBLE",
+            "PLAN_REBUILDABLE",
+            "regenerate the unsigned plan with the current Runtime before any sign or publish operation",
+        )
     } else if build.contains(old) {
-        ("BUILD_COMPATIBLE", "BUILD_VERIFIED", "rebuild the artifact and plan with the current Runtime before any sign or publish operation")
+        (
+            "BUILD_COMPATIBLE",
+            "BUILD_VERIFIED",
+            "rebuild the artifact and plan with the current Runtime before any sign or publish operation",
+        )
     } else if read.contains(old) {
         (
             "READ_COMPATIBLE",
@@ -4441,7 +4644,7 @@ fn validate_receipt_value(value: &Value) -> Result<(), String> {
     }
     match object.get("receipt_kind").and_then(Value::as_str) {
         Some("PREFLIGHT") if !["READY", "BLOCKED", "STALE"].contains(&status) => {
-            return Err("PREFLIGHT_STATUS_INVALID".into())
+            return Err("PREFLIGHT_STATUS_INVALID".into());
         }
         Some("EVIDENCE")
             if ![
@@ -4454,7 +4657,7 @@ fn validate_receipt_value(value: &Value) -> Result<(), String> {
             ]
             .contains(&status) =>
         {
-            return Err("EVIDENCE_STATUS_INVALID".into())
+            return Err("EVIDENCE_STATUS_INVALID".into());
         }
         _ => {}
     }
@@ -5209,13 +5412,27 @@ fn quickstart_manifest(template: &str, network: &str) -> Result<Value, String> {
 
 fn template_instructions(template: &str) -> &'static str {
     match template {
-        "PureCompute" => "Declare bounded inputs and outputs, then replace the placeholder vector with a deterministic behavior case.",
-        "StateMachine" | "Machine" | "BoundedStateMachine" => "Declare persistent state, allowed transitions and an idempotency/replay rule, then replace the placeholder vector with a state progression case.",
-        "Content" => "Declare content inputs, public/private placement and the commitment or version rule before adding content vectors.",
-        "ValueSettlement" => "Declare value flows, recipient rules, limits, refund/timeout behavior and duplicate-request handling; do not infer payment semantics from this template.",
-        "Container" => "Declare the hosted dependency boundary, request/response shape, timeout and failure behavior before adding integration vectors.",
-        "Composition" => "Declare component identities, typed bindings, state merge rules and resource limits before adding composition vectors.",
-        _ => "Replace source_hash with the hash of the canonical source description and add at least one test vector.",
+        "PureCompute" => {
+            "Declare bounded inputs and outputs, then replace the placeholder vector with a deterministic behavior case."
+        }
+        "StateMachine" | "Machine" | "BoundedStateMachine" => {
+            "Declare persistent state, allowed transitions and an idempotency/replay rule, then replace the placeholder vector with a state progression case."
+        }
+        "Content" => {
+            "Declare content inputs, public/private placement and the commitment or version rule before adding content vectors."
+        }
+        "ValueSettlement" => {
+            "Declare value flows, recipient rules, limits, refund/timeout behavior and duplicate-request handling; do not infer payment semantics from this template."
+        }
+        "Container" => {
+            "Declare the hosted dependency boundary, request/response shape, timeout and failure behavior before adding integration vectors."
+        }
+        "Composition" => {
+            "Declare component identities, typed bindings, state merge rules and resource limits before adding composition vectors."
+        }
+        _ => {
+            "Replace source_hash with the hash of the canonical source description and add at least one test vector."
+        }
     }
 }
 
@@ -15329,6 +15546,28 @@ fn run(cli: Cli) -> Result<(), String> {
             AppAction::ComposePreflight { profiles } => composition_preflight(profiles),
         },
         Command::Name { action } => match action {
+            NameAction::RegistryInfo => emit_result(
+                "ktape name registry-info",
+                Some("testnet-10"),
+                serde_json::from_str(include_str!(
+                    "../../../data/registry/tn10-deployment-v1.json"
+                ))
+                .map_err(|error| format!("REGISTRY_DEPLOYMENT_INVALID:{error}"))?,
+            ),
+            #[cfg(all(feature = "developer-signing", feature = "tn10-network"))]
+            NameAction::TestKeygen { output } => emit_result(
+                "ktape name test-keygen",
+                Some("testnet-10"),
+                ktapeout_cli::tn10_developer_signing::generate_tn10_test_key(&output)
+                    .map_err(|error| error.to_string())?,
+            ),
+            #[cfg(all(feature = "developer-signing", feature = "tn10-network"))]
+            NameAction::TestKeyInfo { key_file } => emit_result(
+                "ktape name test-key-info",
+                Some("testnet-10"),
+                ktapeout_cli::tn10_developer_signing::inspect_tn10_test_key(&key_file)
+                    .map_err(|error| error.to_string())?,
+            ),
             NameAction::Normalize {
                 uri,
                 default_network,
@@ -15397,6 +15636,247 @@ fn run(cli: Cli) -> Result<(), String> {
                 fs::write(&output, bytes)
                     .map_err(|error| format!("NAMESPACE_ISSUANCE_REVIEW_WRITE_ERROR:{error}"))?;
                 emit_result("ktape name issuance-review", Some("testnet-10"), record)
+            }
+            NameAction::IssuancePlan { request, output } => {
+                let request = read_json(&request)?;
+                let plan = ktapeout_050_adapter_workbench::namespace_issuance_v1_plan::build(
+                    &request, false,
+                )
+                .map_err(|error| format!("NAMESPACE_ISSUANCE_PLAN_REJECTED:{error}"))?;
+                if plan["body"]["network"] != "testnet-10"
+                    || plan["body"]["adapter_id"] != "ktape.official.adapter.registry"
+                    || plan["body"]["broadcast"] != false
+                {
+                    return Err("NAMESPACE_ISSUANCE_PLAN_SCOPE_INVALID".into());
+                }
+                let bytes = serde_json::to_vec_pretty(&plan)
+                    .map_err(|error| format!("NAMESPACE_ISSUANCE_PLAN_SERIALIZE_ERROR:{error}"))?;
+                fs::write(&output, bytes)
+                    .map_err(|error| format!("NAMESPACE_ISSUANCE_PLAN_WRITE_ERROR:{error}"))?;
+                emit_result("ktape name issuance-plan", Some("testnet-10"), plan)
+            }
+            NameAction::IssuanceTransition {
+                phase,
+                request,
+                output,
+                authorization,
+                key_path,
+                key_stdin,
+            } => {
+                if output.exists() {
+                    return Err("NAMESPACE_ISSUANCE_TRANSITION_OUTPUT_EXISTS".into());
+                }
+                let mode = match phase.as_str() {
+                    "plan" => "--transition-plan",
+                    "verify" => "--verify-signatures",
+                    "assemble" => "--merge-signatures",
+                    "sign" => "sign",
+                    _ => return Err("NAMESPACE_ISSUANCE_TRANSITION_PHASE_INVALID".into()),
+                };
+                let document = read_json(&request)?;
+                let operation = if phase == "plan" {
+                    &document["request"]
+                } else {
+                    &document["plan"]["request"]
+                };
+                if operation["network"] != "testnet-10"
+                    || operation["operation"] != "ISSUE_NAMESPACE"
+                {
+                    return Err("NAMESPACE_ISSUANCE_TRANSITION_SCOPE_INVALID".into());
+                }
+                if phase == "sign" {
+                    let authorization_path = authorization
+                        .as_deref()
+                        .ok_or("NAMESPACE_ISSUANCE_TRANSITION_AUTHORIZATION_REQUIRED")?;
+                    let authorization = read_json(authorization_path)?;
+                    ktapeout_cli::tn10_developer_signing::run_name_transition_sign(
+                        &document,
+                        &authorization,
+                        &output,
+                        key_path.as_deref(),
+                        key_stdin,
+                    )
+                    .map_err(|error| {
+                        format!("NAMESPACE_ISSUANCE_TRANSITION_SIGN_REJECTED:{error}")
+                    })?;
+                    return emit_result(
+                        "ktape name issuance-transition sign",
+                        Some("testnet-10"),
+                        read_json(&output)?,
+                    );
+                }
+                if key_path.is_some() || key_stdin {
+                    return Err("NAMESPACE_ISSUANCE_TRANSITION_KEY_OPTION_UNSUPPORTED".into());
+                }
+                if authorization.is_some() {
+                    return Err("NAMESPACE_ISSUANCE_TRANSITION_AUTHORIZATION_PHASE_INVALID".into());
+                }
+                let transition_input = if phase == "plan" {
+                    json!({
+                        "action":"profile_state_transition",
+                        "request":operation
+                    })
+                } else {
+                    json!({"plan":document["plan"],"packets":document["packets"]})
+                };
+                let result =
+                    ktapeout_050_adapter_workbench::namespace_issuance_v1_plan::transition_command(
+                        mode,
+                        &transition_input,
+                    )
+                    .map_err(|error| format!("NAMESPACE_ISSUANCE_TRANSITION_REJECTED:{error}"))?;
+                let mut result = if phase == "plan" {
+                    json!({
+                        "plan":{"action":"profile_state_transition","request":operation},
+                        "signing":result,
+                        "packets":[],
+                        "broadcast":false
+                    })
+                } else {
+                    result
+                };
+                if phase == "assemble" {
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map_err(|_| "TN10_CLOCK_INVALID")?
+                        .as_secs();
+                    ktapeout_cli::tn10_pipeline::verify_namespace_transition_authorization(
+                        &document,
+                        &document["authorization"],
+                        now,
+                    )
+                    .map_err(|error| error.to_string())?;
+                    result["authorization"] = document["authorization"].clone();
+                }
+                let bytes = serde_json::to_vec_pretty(&result).map_err(|error| {
+                    format!("NAMESPACE_ISSUANCE_TRANSITION_SERIALIZE_ERROR:{error}")
+                })?;
+                let mut file = OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(&output)
+                    .map_err(|error| {
+                        format!("NAMESPACE_ISSUANCE_TRANSITION_WRITE_ERROR:{error}")
+                    })?;
+                file.write_all(&bytes)
+                    .and_then(|_| file.sync_all())
+                    .map_err(|error| {
+                        format!("NAMESPACE_ISSUANCE_TRANSITION_WRITE_ERROR:{error}")
+                    })?;
+                emit_result("ktape name issuance-transition", Some("testnet-10"), result)
+            }
+            NameAction::ParentGenesisPlan { request, output } => {
+                let request = read_json(&request)?;
+                let plan =
+                    ktapeout_050_adapter_workbench::namespace_parent_genesis::build(&request)
+                        .map_err(|error| format!("NAMESPACE_PARENT_GENESIS_REJECTED:{error}"))?;
+                if plan["adapter_id"] != "ktape.official.adapter.registry"
+                    || plan["network"] != "testnet-10"
+                    || plan["broadcast"] != false
+                {
+                    return Err("NAMESPACE_PARENT_GENESIS_SCOPE_INVALID".into());
+                }
+                let bytes = serde_json::to_vec_pretty(&plan)
+                    .map_err(|error| format!("NAMESPACE_PARENT_GENESIS_SERIALIZE_ERROR:{error}"))?;
+                fs::write(&output, bytes)
+                    .map_err(|error| format!("NAMESPACE_PARENT_GENESIS_WRITE_ERROR:{error}"))?;
+                emit_result("ktape name parent-genesis-plan", Some("testnet-10"), plan)
+            }
+            NameAction::ParentGenesisTransition {
+                phase,
+                request,
+                output,
+                authorization,
+                key_path,
+                key_stdin,
+            } => {
+                if output.exists() {
+                    return Err("NAMESPACE_PARENT_GENESIS_TRANSITION_OUTPUT_EXISTS".into());
+                }
+                let mode = match phase.as_str() {
+                    "plan" => "--transition-plan",
+                    "verify" => "--verify-signatures",
+                    "assemble" => "--merge-signatures",
+                    "sign" => "sign",
+                    _ => return Err("NAMESPACE_PARENT_GENESIS_TRANSITION_PHASE_INVALID".into()),
+                };
+                let document = read_json(&request)?;
+                if phase == "sign" {
+                    let authorization_path = authorization
+                        .as_deref()
+                        .ok_or("NAMESPACE_PARENT_GENESIS_TRANSITION_AUTHORIZATION_REQUIRED")?;
+                    let authorization = read_json(authorization_path)?;
+                    ktapeout_cli::tn10_developer_signing::run_name_transition_sign(
+                        &document,
+                        &authorization,
+                        &output,
+                        key_path.as_deref(),
+                        key_stdin,
+                    )
+                    .map_err(|error| format!("NAMESPACE_PARENT_GENESIS_SIGN_REJECTED:{error}"))?;
+                    return emit_result(
+                        "ktape name parent-genesis-transition sign",
+                        Some("testnet-10"),
+                        read_json(&output)?,
+                    );
+                }
+                if key_path.is_some() || key_stdin {
+                    return Err("NAMESPACE_PARENT_GENESIS_KEY_OPTION_UNSUPPORTED".into());
+                }
+                if authorization.is_some() {
+                    return Err(
+                        "NAMESPACE_PARENT_GENESIS_TRANSITION_AUTHORIZATION_PHASE_INVALID".into(),
+                    );
+                }
+                let transition_input = if phase == "plan" {
+                    json!({"action":"namespace_parent_genesis","request":document})
+                } else {
+                    json!({"plan":document["plan"],"packets":document["packets"]})
+                };
+                let result =
+                    ktapeout_050_adapter_workbench::namespace_parent_genesis::transition_command(
+                        mode,
+                        &transition_input,
+                    )
+                    .map_err(|error| {
+                        format!("NAMESPACE_PARENT_GENESIS_TRANSITION_REJECTED:{error}")
+                    })?;
+                let mut result = if phase == "plan" {
+                    json!({"plan":{"action":"namespace_parent_genesis","request":document},"signing":result,"packets":[],"broadcast":false})
+                } else {
+                    result
+                };
+                if phase == "assemble" {
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map_err(|_| "TN10_CLOCK_INVALID")?
+                        .as_secs();
+                    ktapeout_cli::tn10_pipeline::verify_namespace_transition_authorization(
+                        &document,
+                        &document["authorization"],
+                        now,
+                    )
+                    .map_err(|error| error.to_string())?;
+                    result["authorization"] = document["authorization"].clone();
+                }
+                let mut file = OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(&output)
+                    .map_err(|_| "NAMESPACE_PARENT_GENESIS_TRANSITION_OUTPUT_EXISTS")?;
+                let bytes = serde_json::to_vec_pretty(&result).map_err(|error| {
+                    format!("NAMESPACE_PARENT_GENESIS_TRANSITION_SERIALIZE_ERROR:{error}")
+                })?;
+                file.write_all(&bytes)
+                    .and_then(|_| file.sync_all())
+                    .map_err(|error| {
+                        format!("NAMESPACE_PARENT_GENESIS_TRANSITION_WRITE_ERROR:{error}")
+                    })?;
+                emit_result(
+                    "ktape name parent-genesis-transition",
+                    Some("testnet-10"),
+                    result,
+                )
             }
             NameAction::SpaceCheck {
                 keys,
@@ -15754,6 +16234,24 @@ fn run(cli: Cli) -> Result<(), String> {
                 allow_readback,
             ),
             #[cfg(feature = "developer-signing")]
+            Tn10Action::AuthorizeNamespaceTransition {
+                plan,
+                output,
+                nodes,
+                max_total_sompi,
+                max_fee_sompi,
+                expires_utc,
+                allow_broadcast,
+            } => authorize_namespace_transition(
+                &plan,
+                &output,
+                &nodes,
+                max_total_sompi,
+                max_fee_sompi,
+                &expires_utc,
+                allow_broadcast,
+            ),
+            #[cfg(feature = "developer-signing")]
             Tn10Action::Sign {
                 plan,
                 authorization,
@@ -15786,6 +16284,18 @@ fn run(cli: Cli) -> Result<(), String> {
             } => {
                 tn10_pipeline::submit(&signed, &output, retry_same_txid).map_err(|e| e.to_string())
             }
+            Tn10Action::SubmitNamespaceTransition {
+                signed,
+                output,
+                nodes,
+                retry_same_txid,
+            } => tn10_pipeline::submit_namespace_transition(
+                &signed,
+                &output,
+                &nodes,
+                retry_same_txid,
+            )
+            .map_err(|e| e.to_string()),
             Tn10Action::Verify { evidence, output } => {
                 tn10_pipeline::verify(&evidence, &output).map_err(|e| e.to_string())
             }
@@ -16724,7 +17234,9 @@ fn run_cli() -> ExitCode {
                 )
             {
                 // Never echo an accidentally supplied secret in clap's diagnostic.
-                eprintln!("TN10_SIGN_ARGUMENTS_INVALID: use --key-file PATH or --key-stdin; secret values are never accepted as arguments.");
+                eprintln!(
+                    "TN10_SIGN_ARGUMENTS_INVALID: use --key-file PATH or --key-stdin; secret values are never accepted as arguments."
+                );
                 return ExitCode::from(2);
             }
             error.exit();

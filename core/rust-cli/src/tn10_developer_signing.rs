@@ -2,7 +2,8 @@
 //!
 //! The caller supplies public plan data and a local input stream; this module has no transport.
 use crate::tn10_pipeline::{attach_signature, import_signature, signing_summary, Error};
-use secp256k1::{Keypair, Message, Secp256k1, SecretKey};
+use secp256k1::{schnorr::Signature, Keypair, Message, Secp256k1, SecretKey, XOnlyPublicKey};
+use serde_json::json;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
@@ -12,6 +13,74 @@ use std::path::Path;
 use zeroize::Zeroizing;
 
 const MAX_SECRET_BYTES: u64 = 128;
+
+/// Generate a one-use TN10 test key inside the caller's protected system temp directory.
+/// The secret is written once with create-new semantics and is never returned or printed.
+#[cfg(feature = "tn10-network")]
+pub fn generate_tn10_test_key(output: &Path) -> Result<Value, Error> {
+    let temp = std::env::temp_dir().canonicalize()?;
+    let parent = output
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."))
+        .canonicalize()?;
+    if !parent.starts_with(&temp) || output.exists() {
+        return Err("TN10_TEST_KEY_PATH_UNSAFE_OR_EXISTS".into());
+    }
+    let secret = SecretKey::new(&mut secp256k1::rand::thread_rng());
+    let pair = Keypair::from_secret_key(&Secp256k1::new(), &secret);
+    let (public, _) = pair.x_only_public_key();
+    let secret_hex = Zeroizing::new(hex::encode(secret.secret_bytes()));
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options
+        .open(output)
+        .map_err(|_| "TN10_TEST_KEY_WRITE_FAILED")?;
+    writeln!(file, "{}", secret_hex.as_str()).map_err(|_| "TN10_TEST_KEY_WRITE_FAILED")?;
+    file.sync_all().map_err(|_| "TN10_TEST_KEY_WRITE_FAILED")?;
+    let address = kaspa_rpc_core::RpcAddress::new(
+        "kaspatest".try_into()?,
+        0u8.try_into()?,
+        &public.serialize(),
+    );
+    Ok(json!({
+        "schema":"KTAPEOUT-TN10-EPHEMERAL-TEST-KEY-V1",
+        "network":"testnet-10",
+        "public_key_xonly":hex::encode(public.serialize()),
+        "address":address.to_string(),
+        "secret_file":output,
+        "secret_emitted":false,
+        "single_use":true
+    }))
+}
+
+/// Return only public identity fields for a locally held TN10 test key.
+/// The secret uses the same protected-file checks and zeroizing buffer as signing.
+#[cfg(feature = "tn10-network")]
+pub fn inspect_tn10_test_key(path: &Path) -> Result<Value, Error> {
+    let secret = SecretMaterial::file(path)?;
+    let secret_key = SecretKey::from_slice(&secret.0[..])?;
+    let keypair = Keypair::from_secret_key(&Secp256k1::new(), &secret_key);
+    let (public, _) = keypair.x_only_public_key();
+    let address = kaspa_rpc_core::RpcAddress::new(
+        "kaspatest".try_into()?,
+        0u8.try_into()?,
+        &public.serialize(),
+    );
+    Ok(json!({
+        "schema":"KTAPEOUT-TN10-EPHEMERAL-TEST-KEY-V1",
+        "network":"testnet-10",
+        "public_key_xonly":hex::encode(public.serialize()),
+        "address":address.to_string(),
+        "secret_emitted":false,
+        "single_use":true
+    }))
+}
 
 /// A fixed 32-byte hexadecimal secret, optionally followed by whitespace.
 /// It is deliberately neither serializable nor printable.
@@ -267,6 +336,228 @@ pub fn sign_native_registration_partial(
         "witness_assembly":"PENDING_COVENANT_CONTEXT",
         "broadcast":false
     }))
+}
+
+/// Sign the input roles assigned to this key in a namespace issuance transition plan.
+/// Confirmation is bound to the native transaction plan hash; no transport is available here.
+pub fn sign_issuance_transition_partial(
+    signing: &Value,
+    secret: [u8; 32],
+    confirmation: &str,
+) -> Result<Vec<Value>, Error> {
+    let requests = signing["requests"]
+        .as_array()
+        .filter(|requests| !requests.is_empty())
+        .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_REQUESTS_INVALID")?;
+    let native_plan_hash = requests[0]["native_plan_hash"]
+        .as_str()
+        .filter(|hash| hash.len() == 64)
+        .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_REQUESTS_INVALID")?;
+    if requests
+        .iter()
+        .any(|request| request["native_plan_hash"].as_str() != Some(native_plan_hash))
+    {
+        return Err("NAMESPACE_ISSUANCE_SIGNATURE_REQUESTS_INVALID".into());
+    }
+    let expected = format!("SIGN {native_plan_hash}");
+    if confirmation != expected {
+        return Err("NAMESPACE_ISSUANCE_SIGN_CONFIRMATION_REQUIRED".into());
+    }
+
+    let material = SecretMaterial(Zeroizing::new(secret));
+    let mut scalar =
+        SecretKey::from_slice(material.0.as_ref()).map_err(|_| "TN10_SECRET_FORMAT_INVALID")?;
+    let secp = Secp256k1::new();
+    let pair = ErasingPair(Keypair::from_secret_key(&secp, &scalar));
+    scalar.non_secure_erase();
+    let signer_public_key = hex::encode(pair.0.x_only_public_key().0.serialize());
+    let mut packets = Vec::new();
+    for request in requests {
+        if request["signer_public_key"].as_str() != Some(signer_public_key.as_str()) {
+            continue;
+        }
+        let input_index = request["input_index"]
+            .as_u64()
+            .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_REQUESTS_INVALID")?;
+        let sighash: [u8; 32] = hex::decode(
+            request["sighash"]
+                .as_str()
+                .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_REQUESTS_INVALID")?,
+        )?
+        .try_into()
+        .map_err(|_| "NAMESPACE_ISSUANCE_SIGNATURE_REQUESTS_INVALID")?;
+        let signature = secp.sign_schnorr_no_aux_rand(&Message::from_digest(sighash), &pair.0);
+        secp.verify_schnorr(
+            &signature,
+            &Message::from_digest(sighash),
+            &pair.0.x_only_public_key().0,
+        )
+        .map_err(|_| "TN10_NATIVE_SIGNATURE_SELF_CHECK_FAILED")?;
+        packets.push(serde_json::json!({
+            "native_plan_hash":native_plan_hash,
+            "input_index":input_index,
+            "signer_public_key":signer_public_key,
+            "sighash_type":1,
+            "signature":hex::encode(signature.as_ref())
+        }));
+    }
+    if packets.is_empty() {
+        return Err("NAMESPACE_ISSUANCE_SIGNER_NOT_A_PLAN_ROLE".into());
+    }
+    Ok(packets)
+}
+
+/// Validate and preserve partial issuance signatures from every authorized role.
+pub fn append_issuance_transition_packets(
+    signing: &Value,
+    existing: &[Value],
+    added: Vec<Value>,
+) -> Result<Vec<Value>, Error> {
+    let requests = signing["requests"]
+        .as_array()
+        .filter(|requests| !requests.is_empty())
+        .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_REQUESTS_INVALID")?;
+    let secp = Secp256k1::verification_only();
+    let mut indices = BTreeSet::new();
+    let mut combined = Vec::with_capacity(existing.len() + added.len());
+    for packet in existing.iter().chain(&added) {
+        let packet_hash = packet["native_plan_hash"]
+            .as_str()
+            .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+        let index = packet["input_index"]
+            .as_u64()
+            .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+        let request = requests
+            .iter()
+            .find(|request| request["input_index"].as_u64() == Some(index))
+            .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+        let public_key = packet["signer_public_key"]
+            .as_str()
+            .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+        let signature_hex = packet["signature"]
+            .as_str()
+            .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+        if request["native_plan_hash"].as_str() != Some(packet_hash)
+            || request["signer_public_key"].as_str() != Some(public_key)
+            || packet["sighash_type"] != 1
+            || !indices.insert(index)
+        {
+            return Err("NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID".into());
+        }
+        let key_bytes: [u8; 32] = hex::decode(public_key)?
+            .try_into()
+            .map_err(|_| "NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+        let key = XOnlyPublicKey::from_slice(&key_bytes)
+            .map_err(|_| "NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+        let digest: [u8; 32] = hex::decode(
+            request["sighash"]
+                .as_str()
+                .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?,
+        )?
+        .try_into()
+        .map_err(|_| "NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+        let signature = Signature::from_slice(&hex::decode(signature_hex)?)
+            .map_err(|_| "NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+        secp.verify_schnorr(&signature, &Message::from_digest(digest), &key)
+            .map_err(|_| "NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+        combined.push(packet.clone());
+    }
+    Ok(combined)
+}
+
+/// Confirm and sign one transition plan locally, then append only public signature packets.
+pub fn run_name_transition_sign(
+    document: &Value,
+    authorization: &Value,
+    output: &Path,
+    key_path: Option<&Path>,
+    key_stdin: bool,
+) -> Result<(), Error> {
+    if !io::stdin().is_terminal() {
+        return Err("NAMESPACE_ISSUANCE_SIGN_REQUIRES_TERMINAL_CONFIRMATION".into());
+    }
+    if output.exists() {
+        return Err("NAMESPACE_ISSUANCE_SIGN_OUTPUT_EXISTS".into());
+    }
+    if usize::from(key_path.is_some()) + usize::from(key_stdin) > 1 {
+        return Err("TN10_SIGN_INPUT_CONFLICT".into());
+    }
+    let plan = &document["plan"];
+    let request = &plan["request"];
+    let canonical_signing = match plan["action"].as_str() {
+        Some("profile_state_transition")
+            if request["network"] == "testnet-10" && request["operation"] == "ISSUE_NAMESPACE" =>
+        {
+            ktapeout_050_adapter_workbench::namespace_issuance_v1_plan::transition_command(
+                "--transition-plan",
+                plan,
+            )
+            .map_err(|_| "NAMESPACE_ISSUANCE_SIGN_PLAN_INVALID")?
+        }
+        Some("namespace_parent_genesis") if request["network"] == "testnet-10" => {
+            ktapeout_050_adapter_workbench::namespace_parent_genesis::transition_command(
+                "--transition-plan",
+                plan,
+            )
+            .map_err(|_| "NAMESPACE_PARENT_GENESIS_SIGN_PLAN_INVALID")?
+        }
+        _ => return Err("NAMESPACE_SIGN_PLAN_INVALID".into()),
+    };
+    if document["signing"] != canonical_signing {
+        return Err("NAMESPACE_SIGN_PLAN_MISMATCH".into());
+    }
+    let now_unix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|_| "TN10_CLOCK_INVALID")?
+        .as_secs();
+    crate::tn10_pipeline::verify_namespace_transition_authorization(
+        document,
+        authorization,
+        now_unix,
+    )?;
+    let signing = &document["signing"];
+    let requests = signing["requests"]
+        .as_array()
+        .filter(|requests| !requests.is_empty())
+        .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_REQUESTS_INVALID")?;
+    let existing_packets = document["packets"]
+        .as_array()
+        .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_PACKETS_INVALID")?;
+    append_issuance_transition_packets(signing, existing_packets, Vec::new())?;
+    let hash = requests[0]["native_plan_hash"]
+        .as_str()
+        .ok_or("NAMESPACE_ISSUANCE_SIGNATURE_REQUESTS_INVALID")?;
+    let expected = format!("SIGN {hash}");
+    writeln!(io::stderr(), "{}", serde_json::to_string_pretty(signing)?)?;
+    writeln!(
+        io::stderr(),
+        "Type {expected} in this terminal to authorize signing:"
+    )?;
+    let mut confirmation = String::new();
+    io::stdin().lock().take(256).read_line(&mut confirmation)?;
+    if confirmation.trim() != expected {
+        return Err("NAMESPACE_ISSUANCE_SIGN_CONFIRMATION_REQUIRED".into());
+    }
+    let material = if let Some(path) = key_path {
+        SecretMaterial::file(path)?
+    } else if key_stdin {
+        SecretMaterial::read(io::stdin().lock())?
+    } else {
+        interactive_secret()?
+    };
+    let packets = sign_issuance_transition_partial(signing, *material.0, &expected)?;
+    let mut signed = document.clone();
+    signed["authorization"] = authorization.clone();
+    let combined = append_issuance_transition_packets(signing, existing_packets, packets)?;
+    signed["packets"] = serde_json::Value::Array(combined);
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(output)
+        .map_err(|_| "NAMESPACE_ISSUANCE_SIGN_OUTPUT_EXISTS")?;
+    file.write_all(&serde_json::to_vec_pretty(&signed)?)?;
+    file.sync_all()?;
+    Ok(())
 }
 
 /// Derive the supplied key's public identity and compare it with every role in

@@ -81,7 +81,13 @@ profile, stale hash, missing field or other malformed input.
 
 ### Read-only TN10 name registration plan
 
-Name and namespace registration is a developer capability, not an operator-only permission. Preview: the V6 reference path has prior assembly and VM validation, but this candidate does not include the corresponding runnable fixture test, so a clean clone cannot reproduce that VM result. End-to-end TN10 validation for existing CompactV1 namespaces is incomplete, and `register-request` fails closed when the required witness context is unavailable.
+Name and namespace registration is a developer capability. The current ktape
+root's ordinary namespace issuance and registration in the resulting
+developer-owned namespace have limited live TN10 evidence. Follow the
+[namespace and name guide](../guides/create-namespace-and-register-name.md) for
+parent genesis, issuance, public witness tools, authorization and two-node
+readback. Existing CompactV1 namespaces remain excluded; missing witness
+context fails closed.
 
 The request workflow begins with a local, complete namespace name inventory:
 

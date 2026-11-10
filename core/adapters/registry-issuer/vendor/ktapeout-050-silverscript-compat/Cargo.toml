@@ -1,0 +1,38 @@
+[package]
+name = "ktapeout-050-silverscript-compat"
+version = "0.5.0"
+edition = "2024"
+license = "MIT"
+description = "Pinned SilverScript compiler compatibility layer for the KTAPEOUT 0.5.0 TN10 adapter workbench"
+rust-version = "1.91.0"
+
+[lib]
+name = "silverscript_lang"
+path = "src/lib.rs"
+
+[dependencies]
+kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+kaspa-txscript = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+kaspa-txscript-errors = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+blake2b_simd = "1.0.2"
+indexmap = "2.7.0"
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+pest = "2.7"
+pest_derive = "2.7"
+rand = "0.8.5"
+secp256k1 = { version = "0.29.0", features = ["global-context", "rand-std", "serde"] }
+thiserror = "1.0.61"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.5.60", features = ["derive"] }
+faster-hex = "0.10"
+semver = "1.0"
+
+# Preserve the pinned compatibility layer's historical API and diagnostics.
+# These Rust 1.91 Clippy findings are confined to this vendored crate; the
+# KTAPEOUT workspace crates remain subject to -D warnings.
+[lints.clippy]
+result_large_err = "allow"
+too_many_arguments = "allow"
+collapsible_if = "allow"
+manual_is_multiple_of = "allow"

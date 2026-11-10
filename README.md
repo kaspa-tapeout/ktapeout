@@ -33,8 +33,8 @@ cargo run --locked -p ktapeout-cli -- app test ./my-app/source-manifest.json
 |---|---|---|
 | Build a deterministic application package locally | ![LOCAL_OK evidence](docs/assets/badge-local-ok.svg) | Repeated local builds produced the same package digest; no upload or publication. |
 | Anchor and read back a Testnet-10 artifact root | ![LIVE_TN10 evidence](docs/assets/badge-live-tn10.svg) | Documented transactions; not rechecked online for this preview. The payload is not stored on chain. |
-| Native registration authorization, signing, and assembly | ![MOCK_OR_VM evidence](docs/assets/badge-mock-or-vm.svg) | Test fixtures and VM coverage; no live name-registration submission. |
-| V6 name-registration reference assembly | ![MOCK_OR_VM evidence](docs/assets/badge-mock-or-vm.svg) | Pinned VM and saved-vector checks; not an end-to-end CompactV1 registration. |
+| Developer-owned namespace issuance under the current TN10 ktape root | ![LIVE_TN10 evidence](docs/assets/badge-live-tn10.svg) | Developer parent genesis and root Gap insertion confirmed on two nodes; no root-controller signature for ordinary names. |
+| Name registration in that developer-owned namespace | ![LIVE_TN10 evidence](docs/assets/badge-live-tn10.svg) | Public CLI authorization, signing, assembly and submission; name Deed confirmed on two nodes. Existing CompactV1 namespaces are excluded. |
 
 Evidence legend: `LOCAL_OK` = deterministic local evidence; `LIVE_TN10` = documented Testnet-10 evidence; `MOCK_OR_VM` = fixture or virtual-machine evidence.
 See the full [capabilities and status matrix](docs/reference/capabilities-and-status.md) for scope and evidence details.
@@ -42,10 +42,38 @@ See the full [capabilities and status matrix](docs/reference/capabilities-and-st
 ## Not included in this preview
 
 - This repository does not include Studio, Browser SDK, or wallet providers. ktapeout.xyz provides independent Testnet-10 demos; browsing requires no wallet. The demo frontend source is not in this repository, and its version may differ from this preview.
-- A name publication flow for developers.
-- Namespace issuance or CompactV1 name registration for `ktape`, `ktapedemo`, or `ktapeout`.
+- Registration in the existing CompactV1 namespaces `ktape`, `ktapedemo`, or `ktapeout`.
 - Payload storage adapters, including HTTPS, Arweave, Google Drive, or R2.
-- The capabilities and status matrix is authoritative for what this preview establishes; it does not establish that developers can register and publish names end to end.
+- The capabilities and status matrix is authoritative. Name registration does not upload an application or provide payload retention.
+
+## Names and namespaces
+
+**Testnet-10 only.** Developers use their own wallet keys to create an ordinary
+namespace under the existing ktape root, then register names inside it. The root
+retains its reserved-name constraints; ordinary Gap insertion needs no root
+controller approval. A namespace owner authorizes names in their own namespace.
+This does not create a new root or enable the existing CompactV1 namespaces.
+
+Build the public tools with Rust 1.91.0:
+
+```sh
+cargo build --locked -p ktapeout-cli --bin ktape --features tn10-network,developer-signing
+cargo build --locked -p ktapeout-registry-issuer --bins
+```
+
+Follow [the TN10 namespace and name guide](docs/guides/create-namespace-and-register-name.md)
+for public request fields, live UTXO discovery, witness preparation and these phases:
+`parent-genesis-transition plan/sign/assemble` → `issuance-transition plan/sign/assemble`
+→ `register-request` → `register-plan` → `tn10 authorize/sign/assemble/submit`.
+Each submission requires explicit authorization and current two-node UTXO checks.
+
+Parent genesis locks 11 TN10 KAS (10 parent + 1 initial Gap); issuance adds
+2 KAS in root carriers; the first child registration adds a net 2 KAS.
+The child's 10-KAS state field is not an additional 10-KAS payment. Fees are
+additional and quoted live. A limited canary confirmed both operations on two
+nodes; this is not an audit or a guarantee for every name or wallet. On an unknown
+submission, reconcile the exact transaction ID on both nodes before retrying;
+after a competing spend, refresh and replan rather than reusing signatures.
 
 ---
 
@@ -170,12 +198,9 @@ Start at [docs/index.md](docs/index.md). The Rust implementation is under
 unit-test modules, other tests, wallets, keys, caches, build outputs, internal
 deployment material and bilingual research/implementation plans.
 
-The broader infrastructure workspace currently contains a Native-KAS adapter
-and Namespace Registry compiler/genesis helpers. They are intentionally not
-bundled here yet: their current build boundary includes separate adapter/vendor
-sources and external signer handoff. This repository documents the contracts
-and exposes the reviewed Core/Verifier/CLI path until those tools receive a
-standalone English source and evidence review.
+The repository includes the bounded registry adapter and compiler/genesis/witness
+helpers used by the TN10 namespace guide. They operate on explicit public
+requests; key custody, authorization, live state and submission remain separate.
 
 The selected public [TN10 Registry identity evidence](release-evidence/tn10/)
 contains the manifest, Bridge trust anchor and corroborating readback needed to
@@ -233,15 +258,16 @@ not all copies in libraries or the operating system. Developers retain key custo
 TN10 observations completed: (1) one transaction through external-signature
 import and (2) one transaction through `--key-stdin`; `utxos`, `locate` and
 `verify` each had one read-only query against two public nodes. These are limited
-observations, not broad compatibility claims. Built-in `--key-file` signing has
-not been tested on real TN10. The two endpoints' operator independence, Linux
+observations, not broad compatibility claims. Built-in `--key-file` signing was
+also exercised by the limited namespace/name canary. The two endpoints' operator independence, Linux
 runtime behavior, macOS behavior and mainnet are unverified. This flow anchors an artifact root,
 without publishing a name or guaranteeing retained content. Mainnet is rejected.
 It includes `ktape package build` for deterministic local runtime packaging;
 that command does not upload the package, publish a locator, sign, broadcast,
 or activate an application.
-It includes a developer-facing V6 reference-path name-registration preview;
-end-to-end TN10 validation for existing CompactV1 namespaces is incomplete, and
+It includes live-tested developer-owned namespace/name registration using the
+current ktape registry adapter and V6 named witness ABI. Existing CompactV1
+namespaces remain outside this flow, and
 `register-request` fails closed when required witness context is unavailable.
 It does not include V6 Profile integration, Browser SDK, Studio, wallet providers,
 hosted signing services or the complete engineering publication workflow. Mainnet readiness,

@@ -1,0 +1,54 @@
+{
+  "codec_id": "namespace-child-registration-canonical-v2",
+  "wire_version": 2,
+  "input_order": {
+    "parent_namespace_state": 0,
+    "containing_gap_state": 1,
+    "fee_input": 2
+  },
+  "output_order": {
+    "parent_successor": 0,
+    "left_gap": 1,
+    "name_deed": 2,
+    "right_gap": 3,
+    "fee_change": 4
+  },
+  "input_roles": [
+    "parent_namespace_state",
+    "containing_gap_state",
+    "fee_input"
+  ],
+  "output_roles": [
+    "parent_successor",
+    "left_gap",
+    "name_deed",
+    "right_gap",
+    "fee_change"
+  ],
+  "state_layout": {
+    "status": "CANDIDATE_SOURCE_LAYOUT",
+    "encoding": "silverscript_state_object_v1_candidate",
+    "parent": [
+      {"name": "namespaceHash", "type": "byte[32]"},
+      {"name": "authorityCommitment", "type": "byte[32]"},
+      {"name": "resolverPolicyHash", "type": "byte[32]"},
+      {"name": "registryRoot", "type": "byte[32]"},
+      {"name": "nonce", "type": "int"}
+    ],
+    "child": [
+      {"name": "objectKind", "type": "int"},
+      {"name": "nonce", "type": "int"},
+      {"name": "gapLo", "type": "byte[32]"},
+      {"name": "gapHi", "type": "byte[32]"},
+      {"name": "hiIsMax", "type": "int"},
+      {"name": "nameKey", "type": "byte[32]"},
+      {"name": "controllerCommitment", "type": "byte[32]"},
+      {"name": "targetCommitment", "type": "byte[32]"},
+      {"name": "targetAuthorityCommitment", "type": "byte[32]"},
+      {"name": "resolverPolicyHash", "type": "byte[32]"},
+      {"name": "bondSompi", "type": "int"}
+    ]
+  },
+  "signing_domain": "KTAPEOUT/0.5.0/NAMESPACE_CHILD_REGISTRATION/CANONICAL/V2",
+  "status": "ENGINEERING_BASELINE_NOT_L1_ADMITTED"
+}

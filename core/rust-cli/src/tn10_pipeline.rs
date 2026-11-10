@@ -2093,6 +2093,60 @@ pub fn reconcile_native_registration_readback_with_transports(
     }
 }
 
+/// Read back one already assembled namespace transition from two independent TN10 transports.
+/// This operation never signs, submits, or authorizes a retry.
+pub fn reconcile_namespace_transition_with_transports(
+    signed: &Value,
+    first: &mut dyn Transport,
+    second: &mut dyn Transport,
+) -> Result<Value, Error> {
+    if signed["network"] != NETWORK
+        || signed["native_vm_verified"] != true
+        || signed["broadcast"] != false
+        || signed["native_plan_hash"].as_str().is_none_or(|hash| {
+            hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit())
+        })
+    {
+        return Err("TN10_NAMESPACE_TRANSITION_SIGNED_DOCUMENT_INVALID".into());
+    }
+    let expected_rpc: RpcTransaction = serde_json::from_value(signed["transaction"].clone())?;
+    let expected = Transaction::try_from(expected_rpc)?;
+    let txid = expected.id().to_string();
+    if signed["txid"].as_str() != Some(txid.as_str()) {
+        return Err("TN10_NAMESPACE_TRANSITION_TXID_MISMATCH".into());
+    }
+    let left = first
+        .read_transaction(&txid)
+        .map_err(|_| "TN10_NAMESPACE_TRANSITION_READBACK_FAILED")?;
+    let right = second
+        .read_transaction(&txid)
+        .map_err(|_| "TN10_NAMESPACE_TRANSITION_READBACK_FAILED")?;
+    let status = match (left, right) {
+        (None, None) => "NOT_FOUND_BOTH",
+        (Some(left), Some(right)) => {
+            let left: RpcTransaction = serde_json::from_value(left)?;
+            let right: RpcTransaction = serde_json::from_value(right)?;
+            let left = Transaction::try_from(left)?;
+            let right = Transaction::try_from(right)?;
+            if left != right || left != expected || left.id().to_string() != txid {
+                return Err("TN10_NAMESPACE_TRANSITION_DUAL_NODE_MISMATCH".into());
+            }
+            "FOUND_BOTH_MATCH"
+        }
+        _ => return Err("TN10_NAMESPACE_TRANSITION_DUAL_NODE_DISAGREEMENT".into()),
+    };
+    Ok(json!({
+        "schema":"KTAPEOUT-TN10-NAMESPACE-TRANSITION-READBACK-V1",
+        "network":NETWORK,
+        "status":status,
+        "txid":txid,
+        "native_plan_hash":signed["native_plan_hash"],
+        "node_observations":if status == "NOT_FOUND_BOTH" { ["NOT_FOUND","NOT_FOUND"] } else { ["MATCH","MATCH"] },
+        "retry_authorized":false,
+        "broadcast_action":"NOT_PERFORMED_BY_READBACK"
+    }))
+}
+
 /// Combine an existing submission receipt with a dual-node transaction lookup.
 /// This is read-only: it never submits, re-signs, or authorizes a retry, and it does not
 /// claim that the plan's predecessor UTXOs remain unspent.
@@ -2667,8 +2721,13 @@ pub fn submit_with_transport_retry_at<T: Transport>(
             attempt += 1;
         }
     }
+    let receipt_schema = if signed["schema"] == "KTAPEOUT-TN10-NATIVE-SIGNATURES-AGGREGATE-V1" {
+        "KTAPEOUT-TN10-REGISTRATION-SUBMIT-V1"
+    } else {
+        "KTAPEOUT-TN10-SUBMIT-V1"
+    };
     let mut record = json!({
-        "schema":"KTAPEOUT-TN10-SUBMIT-V1", "network":NETWORK,
+        "schema":receipt_schema, "network":NETWORK,
         "status":"SUBMISSION_UNKNOWN", "txid":txid, "plan_sha256":summary_digest,
         "broadcast":"UNKNOWN", "reconcile":"REQUIRED_WITH_TWO_NODES_BEFORE_RETRY"
     });
@@ -2697,9 +2756,751 @@ pub fn submit_with_transport_retry_at<T: Transport>(
     }
 }
 
+/// Submit an assembled namespace transition and require a fresh two-node readback before retry.
+pub fn submit_namespace_transition_with_transports(
+    input: &Path,
+    output: &Path,
+    retry_same_txid: bool,
+    now_unix: u64,
+    broadcast_confirmation: &str,
+    first: &mut dyn Transport,
+    second: &mut dyn Transport,
+) -> Result<(), Error> {
+    let _submit_lock = SubmitLock::acquire(output)?;
+    let signed = read_json(input)?;
+    verify_namespace_transition_artifact(&signed)?;
+    let transition_plan = signed["transition_plan"].clone();
+    let authorization_signing = match transition_plan["action"].as_str() {
+        Some("namespace_parent_genesis") => {
+            ktapeout_050_adapter_workbench::namespace_parent_genesis::transition_command(
+                "--transition-plan",
+                &transition_plan,
+            )
+        }
+        Some("profile_state_transition")
+            if transition_plan["request"]["operation"] == "ISSUE_NAMESPACE" =>
+        {
+            ktapeout_050_adapter_workbench::namespace_issuance_v1_plan::transition_command(
+                "--transition-plan",
+                &transition_plan,
+            )
+        }
+        _ => return Err("TN10_NAMESPACE_TRANSITION_SIGNED_DOCUMENT_INVALID".into()),
+    }
+    .map_err(|_| "TN10_NAMESPACE_TRANSITION_SIGNATURE_REVALIDATION_FAILED")?;
+    verify_namespace_transition_authorization(
+        &json!({"plan":transition_plan,"signing":authorization_signing}),
+        &signed["authorization"],
+        now_unix,
+    )?;
+    let authorization_sha256 = hex::encode(Sha256::digest(serde_json::to_vec(
+        &signed["authorization"],
+    )?));
+    if !matches!(
+        signed["schema"].as_str(),
+        Some("KTAPEOUT-TN10-NAMESPACE-PARENT-GENESIS-SIGNED-V1")
+            | Some("KTAPEOUT-TN10-NAMESPACE-ISSUANCE-SIGNED-V1")
+    ) || signed["network"] != NETWORK
+        || signed["native_vm_verified"] != true
+        || signed["broadcast"] != false
+    {
+        return Err("TN10_NAMESPACE_TRANSITION_SIGNED_DOCUMENT_INVALID".into());
+    }
+    let rpc: RpcTransaction = serde_json::from_value(signed["transaction"].clone())?;
+    let transaction = Transaction::try_from(rpc.clone())?;
+    let txid = transaction.id().to_string();
+    if signed["txid"].as_str() != Some(txid.as_str()) {
+        return Err("TN10_NAMESPACE_TRANSITION_TXID_MISMATCH".into());
+    }
+    if broadcast_confirmation != format!("BROADCAST {txid}") {
+        return Err("TN10_NAMESPACE_TRANSITION_BROADCAST_CONFIRMATION_REQUIRED".into());
+    }
+    let plan_hash = signed["native_plan_hash"]
+        .as_str()
+        .filter(|hash| hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_hexdigit()))
+        .ok_or("TN10_NAMESPACE_TRANSITION_PLAN_HASH_INVALID")?;
+    let retrying = fs::symlink_metadata(output).is_ok();
+    let mut attempt = 0u64;
+    if retrying {
+        if fs::symlink_metadata(output)?.file_type().is_symlink() {
+            return Err("TN10_SUBMISSION_RESULT_EXISTS".into());
+        }
+        let previous = read_json(output)?;
+        if previous["status"] != "SUBMISSION_UNKNOWN" {
+            return Err("TN10_SUBMISSION_RESULT_EXISTS".into());
+        }
+        if !retry_same_txid {
+            return Err("TN10_RETRY_SAME_TXID_REQUIRED".into());
+        }
+        if previous["txid"] != txid || previous["plan_sha256"] != plan_hash {
+            return Err("TN10_SUBMISSION_TXID_MISMATCH_RECONCILE".into());
+        }
+        if previous["authorization_sha256"] != authorization_sha256 {
+            return Err("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_MISMATCH".into());
+        }
+        let reconciliation =
+            reconcile_namespace_transition_with_transports(&signed, first, second)?;
+        if reconciliation["status"] != "NOT_FOUND_BOTH" {
+            return Err("TN10_NAMESPACE_TRANSITION_FOUND_OR_UNRESOLVED_NO_RETRY".into());
+        }
+        loop {
+            attempt += 1;
+            let history = output.with_file_name(format!(
+                "{}.attempt-{attempt}.json",
+                output
+                    .file_name()
+                    .ok_or("TN10_OUTPUT_PATH_INVALID")?
+                    .to_string_lossy()
+            ));
+            if fs::symlink_metadata(&history).is_err() {
+                write_json_new_atomic(&history, &previous)?;
+                break;
+            }
+        }
+    } else if retry_same_txid {
+        return Err("TN10_RETRY_WITHOUT_UNKNOWN_SUBMISSION".into());
+    }
+    let mut record = json!({
+        "schema":"KTAPEOUT-TN10-NAMESPACE-TRANSITION-SUBMIT-V1",
+        "network":NETWORK,
+        "status":"SUBMISSION_UNKNOWN",
+        "txid":txid,
+        "plan_sha256":plan_hash,
+        "authorization_sha256":authorization_sha256,
+        "broadcast":"UNKNOWN",
+        "attempt":attempt + 1,
+        "attempted_at_unix":now_unix,
+        "reconcile":"TWO_NODE_READBACK_REQUIRED_BEFORE_RETRY"
+    });
+    if retrying {
+        replace_json_atomic(output, &record)?;
+    } else {
+        write_json_new_atomic(output, &record)?;
+    }
+    match first.submit(&rpc) {
+        Ok(ack) if ack == txid => {
+            record["status"] = json!("SUBMITTED");
+            record["broadcast"] = json!(true);
+            replace_json_atomic(output, &record)
+        }
+        Ok(_) => {
+            record["acknowledgement"] = json!("MISMATCH");
+            replace_json_atomic(output, &record)?;
+            Err("TN10_NAMESPACE_TRANSITION_SUBMISSION_UNKNOWN".into())
+        }
+        Err(_) => Err("TN10_NAMESPACE_TRANSITION_SUBMISSION_UNKNOWN".into()),
+    }
+}
+
+/// Rebuild the signed transaction from its public plan and signature packets before network use.
+pub fn verify_namespace_transition_artifact(signed: &Value) -> Result<(), Error> {
+    if signed["network"] != NETWORK
+        || signed["broadcast"] != false
+        || signed["native_vm_verified"] != true
+        || signed["transition_plan"].is_null()
+        || !signed["signature_packets"].is_array()
+    {
+        return Err("TN10_NAMESPACE_TRANSITION_SIGNED_DOCUMENT_INVALID".into());
+    }
+    let packets = signed["signature_packets"].clone();
+    let input = json!({"plan":signed["transition_plan"],"packets":packets});
+    let rebuilt = match signed["transition_plan"]["action"].as_str() {
+        Some("namespace_parent_genesis") => {
+            ktapeout_050_adapter_workbench::namespace_parent_genesis::transition_command(
+                "--merge-signatures",
+                &input,
+            )
+        }
+        Some("profile_state_transition")
+            if signed["transition_plan"]["request"]["operation"] == "ISSUE_NAMESPACE" =>
+        {
+            ktapeout_050_adapter_workbench::namespace_issuance_v1_plan::transition_command(
+                "--merge-signatures",
+                &input,
+            )
+        }
+        _ => return Err("TN10_NAMESPACE_TRANSITION_SIGNED_DOCUMENT_INVALID".into()),
+    }
+    .map_err(|_| "TN10_NAMESPACE_TRANSITION_SIGNATURE_REVALIDATION_FAILED")?;
+    if rebuilt["transaction"] != signed["transaction"]
+        || rebuilt["native_plan_hash"] != signed["native_plan_hash"]
+        || rebuilt["native_vm_verified"] != true
+    {
+        return Err("TN10_NAMESPACE_TRANSITION_SIGNATURE_REVALIDATION_FAILED".into());
+    }
+    let rpc: RpcTransaction = serde_json::from_value(signed["transaction"].clone())?;
+    let transaction = Transaction::try_from(rpc)?;
+    if signed["txid"].as_str() != Some(transaction.id().to_string().as_str()) {
+        return Err("TN10_NAMESPACE_TRANSITION_TXID_MISMATCH".into());
+    }
+    Ok(())
+}
+
+/// Require each signed namespace-transition input to still be unspent and byte-identical on two
+/// synchronized TN10 UTXO indexes immediately before broadcast.
+pub fn verify_namespace_transition_inputs_with_transports(
+    signed: &Value,
+    first: &mut dyn Transport,
+    second: &mut dyn Transport,
+) -> Result<Value, Error> {
+    let plan = &signed["transition_plan"];
+    let request = &plan["request"];
+    let inputs = match plan["action"].as_str() {
+        Some("namespace_parent_genesis") => vec![request["funding_utxo"].clone()],
+        Some("profile_state_transition") if request["operation"] == "ISSUE_NAMESPACE" => vec![
+            request["parent_utxo"].clone(),
+            request["root_gap_utxo"].clone(),
+            request["fee_utxo"].clone(),
+        ],
+        _ => return Err("TN10_NAMESPACE_TRANSITION_PLAN_INVALID".into()),
+    };
+    let mut verified = Vec::with_capacity(inputs.len());
+    for input in &inputs {
+        let script_text = input["script_public_key"]
+            .as_str()
+            .ok_or("TN10_NAMESPACE_TRANSITION_INPUT_INVALID")?;
+        let script = hex::decode(
+            script_text
+                .strip_prefix("0000")
+                .ok_or("TN10_NAMESPACE_TRANSITION_INPUT_INVALID")?,
+        )?;
+        let address =
+            if script.len() == 35 && script[0] == 0xaa && script[1] == 0x20 && script[34] == 0x87 {
+                kaspa_rpc_core::RpcAddress::new(
+                    "kaspatest".try_into()?,
+                    8u8.try_into()?,
+                    &script[2..34],
+                )
+            } else if script.len() == 34 && script[0] == 0x20 && script[33] == 0xac {
+                kaspa_rpc_core::RpcAddress::new(
+                    "kaspatest".try_into()?,
+                    0u8.try_into()?,
+                    &script[1..33],
+                )
+            } else {
+                return Err("TN10_NAMESPACE_TRANSITION_INPUT_SCRIPT_UNSUPPORTED".into());
+            };
+        let observations = [checked_observation(first)?, checked_observation(second)?];
+        if observations.iter().any(|node| node["utxo_indexed"] != true) {
+            return Err("TN10_UTXO_INDEX_REQUIRED".into());
+        }
+        // Sequential observations may have different live DAG tips; compare the UTXOs below.
+        let address_text = address.to_string();
+        let left = canonical_utxos(first.read_utxos(&address_text)?, &address)?;
+        let right = canonical_utxos(second.read_utxos(&address_text)?, &address)?;
+        if left != right {
+            return Err("TN10_NAMESPACE_TRANSITION_INPUT_NODES_DISAGREE".into());
+        }
+        let outpoint = input["outpoint"]
+            .as_str()
+            .ok_or("TN10_NAMESPACE_TRANSITION_INPUT_INVALID")?;
+        let current = left
+            .as_array()
+            .and_then(|utxos| utxos.iter().find(|utxo| utxo["outpoint"] == outpoint))
+            .ok_or("TN10_NAMESPACE_TRANSITION_INPUT_SPENT_OR_MISSING")?;
+        for field in [
+            "amount",
+            "script_public_key",
+            "block_daa_score",
+            "covenant_id",
+        ] {
+            if current[field] != input[field] {
+                return Err("TN10_NAMESPACE_TRANSITION_INPUT_CHANGED".into());
+            }
+        }
+        verified.push(json!({
+            "outpoint":outpoint,
+            "amount_sompi":input["amount"],
+            "script_public_key_sha256":hex::encode(Sha256::digest(script_text.as_bytes()))
+        }));
+    }
+    Ok(json!({
+        "status":"ALL_INPUTS_UNSPENT_AND_IDENTICAL_ON_BOTH_NODES",
+        "checked_input_count":verified.len(),
+        "inputs":verified
+    }))
+}
+
+/// Require every V6 child-registration input to remain unspent and byte-identical on two
+/// synchronized TN10 UTXO indexes immediately before broadcast.
+pub fn verify_native_registration_inputs_with_transports(
+    plan: &Value,
+    first: &mut dyn Transport,
+    second: &mut dyn Transport,
+) -> Result<Value, Error> {
+    let inputs = plan["inputs"]
+        .as_array()
+        .filter(|inputs| !inputs.is_empty())
+        .ok_or("TN10_REGISTRATION_INPUTS_REQUIRED")?;
+    let mut verified = Vec::with_capacity(inputs.len());
+    for input in inputs {
+        let script_text = input["script_public_key"]
+            .as_str()
+            .ok_or("TN10_REGISTRATION_INPUT_INVALID")?;
+        let script = hex::decode(
+            script_text
+                .strip_prefix("0000")
+                .ok_or("TN10_REGISTRATION_INPUT_INVALID")?,
+        )?;
+        let address =
+            if script.len() == 35 && script[0] == 0xaa && script[1] == 0x20 && script[34] == 0x87 {
+                kaspa_rpc_core::RpcAddress::new(
+                    "kaspatest".try_into()?,
+                    8u8.try_into()?,
+                    &script[2..34],
+                )
+            } else if script.len() == 34 && script[0] == 0x20 && script[33] == 0xac {
+                kaspa_rpc_core::RpcAddress::new(
+                    "kaspatest".try_into()?,
+                    0u8.try_into()?,
+                    &script[1..33],
+                )
+            } else {
+                return Err("TN10_REGISTRATION_INPUT_SCRIPT_UNSUPPORTED".into());
+            };
+        let observations = [checked_observation(first)?, checked_observation(second)?];
+        if observations.iter().any(|node| node["utxo_indexed"] != true) {
+            return Err("TN10_UTXO_INDEX_REQUIRED".into());
+        }
+        // Sequential observations may have different live DAG tips; compare the UTXOs below.
+        let address_text = address.to_string();
+        let left = canonical_utxos(first.read_utxos(&address_text)?, &address)?;
+        let right = canonical_utxos(second.read_utxos(&address_text)?, &address)?;
+        if left != right {
+            return Err("TN10_REGISTRATION_INPUT_NODES_DISAGREE".into());
+        }
+        let outpoint = input["outpoint"]
+            .as_str()
+            .ok_or("TN10_REGISTRATION_INPUT_INVALID")?;
+        let current = left
+            .as_array()
+            .and_then(|utxos| utxos.iter().find(|utxo| utxo["outpoint"] == outpoint))
+            .ok_or("TN10_REGISTRATION_INPUT_SPENT_OR_MISSING")?;
+        for field in [
+            "amount",
+            "script_public_key",
+            "block_daa_score",
+            "covenant_id",
+        ] {
+            if current[field] != input[field] {
+                return Err("TN10_REGISTRATION_INPUT_CHANGED".into());
+            }
+        }
+        verified.push(json!({
+            "outpoint":outpoint,
+            "amount_sompi":input["amount"],
+            "script_public_key_sha256":hex::encode(Sha256::digest(script_text.as_bytes()))
+        }));
+    }
+    Ok(json!({
+        "status":"ALL_INPUTS_UNSPENT_AND_IDENTICAL_ON_BOTH_NODES",
+        "checked_input_count":verified.len(),
+        "inputs":verified
+    }))
+}
+
+fn namespace_transition_limits(document: &Value) -> Result<(String, u64, u64, u64), Error> {
+    let transition_plan = &document["plan"];
+    let request = &transition_plan["request"];
+    let action = transition_plan["action"]
+        .as_str()
+        .ok_or("TN10_NAMESPACE_TRANSITION_PLAN_INVALID")?;
+    let inputs = match action {
+        "namespace_parent_genesis" => vec![&request["funding_utxo"]],
+        "profile_state_transition" if request["operation"] == "ISSUE_NAMESPACE" => {
+            vec![
+                &request["parent_utxo"],
+                &request["root_gap_utxo"],
+                &request["fee_utxo"],
+            ]
+        }
+        _ => return Err("TN10_NAMESPACE_TRANSITION_PLAN_INVALID".into()),
+    };
+    let input_total = inputs.iter().try_fold(0u64, |total, input| {
+        total
+            .checked_add(
+                input["amount"]
+                    .as_u64()
+                    .ok_or("TN10_NAMESPACE_TRANSITION_INPUT_AMOUNT_INVALID")?,
+            )
+            .ok_or_else(|| Error::from("TN10_NAMESPACE_TRANSITION_VALUE_OVERFLOW"))
+    })?;
+    let fee = request["fee_sompi"]
+        .as_u64()
+        .ok_or("TN10_NAMESPACE_TRANSITION_FEE_INVALID")?;
+    // The authorization cap covers value actually committed plus the fee. A large funding
+    // UTXO is not itself a spend: genesis returns its remainder to the exact funding script.
+    // Bind the debit to the canonical plan request so changing the locked amounts changes the
+    // native plan hash and invalidates this authorization.
+    let authorized_debit = match action {
+        "namespace_parent_genesis" => request["parent_state_sompi"]
+            .as_u64()
+            .and_then(|parent| {
+                request["gap_state_sompi"]
+                    .as_u64()
+                    .and_then(|gap| parent.checked_add(gap))
+            })
+            .and_then(|locked| locked.checked_add(fee))
+            .ok_or("TN10_NAMESPACE_TRANSITION_VALUE_OVERFLOW")?,
+        // The issuance planner validates the parent successor and computes the incremental
+        // carrier value over the consumed root Gap. Preserve its accounting instead of counting
+        // the existing covenant inputs as newly spent wallet funds.
+        "profile_state_transition" => {
+            let issuance =
+                ktapeout_050_adapter_workbench::namespace_issuance_v1_plan::build(request, false)?;
+            // The adapter plan does not expose the legacy review-only economics object.
+            // Its canonical fee change returns to the funding script, so the wallet
+            // debit is exactly the fee input less that change (including the fee).
+            let transaction: RpcTransaction =
+                serde_json::from_value(issuance["body"]["transaction"].clone())?;
+            request["fee_utxo"]["amount"]
+                .as_u64()
+                .and_then(|amount| {
+                    transaction
+                        .outputs
+                        .last()
+                        .and_then(|change| amount.checked_sub(change.value))
+                })
+                .ok_or("TN10_NAMESPACE_TRANSITION_VALUE_OVERFLOW")?
+        }
+        _ => return Err("TN10_NAMESPACE_TRANSITION_PLAN_INVALID".into()),
+    };
+    let requests = document["signing"]["requests"]
+        .as_array()
+        .filter(|requests| !requests.is_empty())
+        .ok_or("TN10_NAMESPACE_TRANSITION_PLAN_INVALID")?;
+    let plan_hash = requests[0]["native_plan_hash"]
+        .as_str()
+        .filter(|hash| hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_hexdigit()))
+        .ok_or("TN10_NAMESPACE_TRANSITION_PLAN_INVALID")?;
+    if requests
+        .iter()
+        .any(|request| request["native_plan_hash"].as_str() != Some(plan_hash))
+    {
+        return Err("TN10_NAMESPACE_TRANSITION_PLAN_INVALID".into());
+    }
+    Ok((plan_hash.to_owned(), input_total, fee, authorized_debit))
+}
+
+/// Prepare a bounded authorization for the exact public namespace transition plan.
+/// The quote must be a fresh two-node observation; creation still requires typed terminal consent.
+pub fn prepare_namespace_transition_authorization(
+    document: &Value,
+    fee_quote: &Value,
+    max_total_sompi: u64,
+    max_fee_sompi: u64,
+    expires_at_unix: u64,
+    now_unix: u64,
+    allow_broadcast: bool,
+) -> Result<Value, Error> {
+    const MAX_QUOTE_AGE_SECONDS: u64 = 10 * 60;
+    const MAX_AUTHORIZATION_LIFETIME_SECONDS: u64 = 24 * 60 * 60;
+    let (plan_hash, input_total, fee, authorized_debit) = namespace_transition_limits(document)?;
+    let endpoints = fee_quote["endpoints"]
+        .as_array()
+        .filter(|items| items.len() == 2)
+        .ok_or("TN10_NAMESPACE_TRANSITION_FEE_QUOTE_INVALID")?;
+    let rates = fee_quote["node_rates"]
+        .as_array()
+        .filter(|items| items.len() == 2)
+        .ok_or("TN10_NAMESPACE_TRANSITION_FEE_QUOTE_INVALID")?;
+    let endpoint_values = endpoints
+        .iter()
+        .map(|endpoint| {
+            endpoint
+                .as_str()
+                .ok_or("TN10_NAMESPACE_TRANSITION_FEE_QUOTE_INVALID")
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let first_rate = rates[0]["feerate"]
+        .as_f64()
+        .ok_or("TN10_NAMESPACE_TRANSITION_FEE_QUOTE_INVALID")?;
+    let second_rate = rates[1]["feerate"]
+        .as_f64()
+        .ok_or("TN10_NAMESPACE_TRANSITION_FEE_QUOTE_INVALID")?;
+    if fee_quote["source"] != "live_dual_node_quote"
+        || endpoint_values[0] == endpoint_values[1]
+        || rates
+            .iter()
+            .enumerate()
+            .any(|(index, rate)| rate["endpoint"].as_str() != Some(endpoint_values[index]))
+        || [first_rate, second_rate]
+            .iter()
+            .any(|rate| !rate.is_finite() || *rate <= 0.0)
+        || first_rate.max(second_rate) > first_rate.min(second_rate) * 2.0
+        || fee_quote["fee_rate_sompi_per_gram"].as_u64()
+            != Some(first_rate.max(second_rate).ceil() as u64)
+    {
+        return Err("TN10_NAMESPACE_TRANSITION_FEE_QUOTE_INVALID".into());
+    }
+    let observed_at = fee_quote["observed_at"]
+        .as_str()
+        .and_then(|value| chrono::DateTime::parse_from_rfc3339(value).ok())
+        .ok_or("TN10_NAMESPACE_TRANSITION_FEE_QUOTE_INVALID")?
+        .timestamp();
+    if observed_at < 0
+        || observed_at as u64 > now_unix
+        || now_unix - observed_at as u64 > MAX_QUOTE_AGE_SECONDS
+    {
+        return Err("TN10_NAMESPACE_TRANSITION_FEE_QUOTE_STALE".into());
+    }
+    if max_total_sompi < authorized_debit || max_fee_sompi < fee {
+        return Err("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_BUDGET_EXCEEDED".into());
+    }
+    if expires_at_unix <= now_unix
+        || expires_at_unix - now_unix > MAX_AUTHORIZATION_LIFETIME_SECONDS
+    {
+        return Err("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_EXPIRY_INVALID".into());
+    }
+    let quote_sha256 = hex::encode(Sha256::digest(serde_json::to_vec(fee_quote)?));
+    Ok(json!({
+        "schema":"KTAPEOUT-TN10-NAMESPACE-TRANSITION-AUTHORIZATION-V1",
+        "network":NETWORK,
+        "native_plan_hash":plan_hash,
+        "input_total_sompi":input_total,
+        "authorized_debit_sompi":authorized_debit,
+        "fee_sompi":fee,
+        "max_total_sompi":max_total_sompi,
+        "max_fee_sompi":max_fee_sompi,
+        "fee_quote_sha256":quote_sha256,
+        "fee_quote":fee_quote,
+        "created_at_unix":now_unix,
+        "expires_at_unix":expires_at_unix,
+        "allow_broadcast":allow_broadcast,
+        "allow_readback":true,
+        "confirmation_method":"TERMINAL_TYPED_PLAN_DIGEST",
+        "created_with_terminal_confirmation":false
+    }))
+}
+
+pub struct NamespaceTransitionAuthorizationConfirmation<'a> {
+    pub expires_at_unix: u64,
+    pub now_unix: u64,
+    pub confirmation: &'a str,
+}
+
+pub fn create_namespace_transition_authorization(
+    document: &Value,
+    fee_quote: &Value,
+    max_total_sompi: u64,
+    max_fee_sompi: u64,
+    allow_broadcast: bool,
+    confirmation: NamespaceTransitionAuthorizationConfirmation<'_>,
+) -> Result<Value, Error> {
+    let mut authorization = prepare_namespace_transition_authorization(
+        document,
+        fee_quote,
+        max_total_sompi,
+        max_fee_sompi,
+        confirmation.expires_at_unix,
+        confirmation.now_unix,
+        allow_broadcast,
+    )?;
+    let expected = format!(
+        "AUTHORIZE {}",
+        authorization["native_plan_hash"].as_str().unwrap_or("")
+    );
+    if confirmation.confirmation != expected {
+        return Err("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_CONFIRMATION_REQUIRED".into());
+    }
+    authorization["created_with_terminal_confirmation"] = json!(true);
+    Ok(authorization)
+}
+
+pub fn verify_namespace_transition_authorization(
+    document: &Value,
+    authorization: &Value,
+    now_unix: u64,
+) -> Result<(), Error> {
+    let (plan_hash, input_total, fee, authorized_debit) = namespace_transition_limits(document)?;
+    let created = authorization["created_at_unix"]
+        .as_u64()
+        .ok_or("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_TIME_INVALID")?;
+    let expires = authorization["expires_at_unix"]
+        .as_u64()
+        .filter(|expires| *expires > now_unix && *expires > created)
+        .ok_or("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_EXPIRED")?;
+    if expires - created > 24 * 60 * 60 || created > now_unix {
+        return Err("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_TIME_INVALID".into());
+    }
+    let quote_hash = hex::encode(Sha256::digest(serde_json::to_vec(
+        &authorization["fee_quote"],
+    )?));
+    let quote_observed_at = authorization["fee_quote"]["observed_at"]
+        .as_str()
+        .and_then(|value| chrono::DateTime::parse_from_rfc3339(value).ok())
+        .ok_or("TN10_NAMESPACE_TRANSITION_FEE_QUOTE_INVALID")?
+        .timestamp();
+    if quote_observed_at < 0
+        || quote_observed_at as u64 > now_unix
+        || now_unix - quote_observed_at as u64 > 10 * 60
+    {
+        return Err("TN10_NAMESPACE_TRANSITION_FEE_QUOTE_STALE".into());
+    }
+    if authorization["schema"] != "KTAPEOUT-TN10-NAMESPACE-TRANSITION-AUTHORIZATION-V1"
+        || authorization["network"] != NETWORK
+        || authorization["native_plan_hash"] != plan_hash
+        || authorization["input_total_sompi"] != input_total
+        || authorization["authorized_debit_sompi"] != authorized_debit
+        || authorization["fee_sompi"] != fee
+        || authorization["max_total_sompi"]
+            .as_u64()
+            .is_none_or(|limit| limit < authorized_debit)
+        || authorization["max_fee_sompi"]
+            .as_u64()
+            .is_none_or(|limit| limit < fee)
+        || authorization["fee_quote_sha256"] != quote_hash
+        || authorization["allow_broadcast"] != true
+        || authorization["allow_readback"] != true
+        || authorization["confirmation_method"] != "TERMINAL_TYPED_PLAN_DIGEST"
+        || authorization["created_with_terminal_confirmation"] != true
+    {
+        return Err("TN10_NAMESPACE_TRANSITION_AUTHORIZATION_BINDING_MISMATCH".into());
+    }
+    Ok(())
+}
+
+/// Validate the signed artifact, then submit with two independent TN10 transports available for
+/// mandatory readback before any retry of an unknown submission.
+pub fn submit_namespace_transition(
+    input: &Path,
+    output: &Path,
+    nodes: &[String],
+    retry_same_txid: bool,
+) -> Result<(), Error> {
+    #[cfg(feature = "tn10-network")]
+    {
+        use std::io::{BufRead, IsTerminal, Read, Write};
+        let signed = read_json(input)?;
+        verify_namespace_transition_artifact(&signed)?;
+        if !std::io::stdin().is_terminal() {
+            return Err("TN10_NAMESPACE_TRANSITION_BROADCAST_TERMINAL_REQUIRED".into());
+        }
+        let endpoints = verification_endpoints(&json!({"network":NETWORK,"nodes":nodes}))?;
+        let mut first = WrpcTransport::connect(&endpoints[0])?;
+        let mut second = WrpcTransport::connect(&endpoints[1])?;
+        let input_readback =
+            verify_namespace_transition_inputs_with_transports(&signed, &mut first, &mut second)?;
+        let txid = signed["txid"]
+            .as_str()
+            .ok_or("TN10_NAMESPACE_TRANSITION_TXID_MISMATCH")?;
+        let confirmation = format!("BROADCAST {txid}");
+        eprintln!(
+            "{}",
+            serde_json::to_string_pretty(&json!({
+                "network":NETWORK,
+                "txid":txid,
+                "input_total_sompi":signed["authorization"]["input_total_sompi"],
+                "fee_sompi":signed["authorization"]["fee_sompi"],
+                "max_total_sompi":signed["authorization"]["max_total_sompi"],
+                "max_fee_sompi":signed["authorization"]["max_fee_sompi"],
+                "authorization_sha256":hex::encode(Sha256::digest(serde_json::to_vec(&signed["authorization"])?)),
+                "live_input_readback":input_readback,
+                "retry_same_txid":retry_same_txid
+            }))?
+        );
+        eprint!("Type {confirmation} to submit this exact transaction: ");
+        std::io::stderr()
+            .flush()
+            .map_err(|_| "TN10_NAMESPACE_TRANSITION_BROADCAST_CONFIRMATION_REQUIRED")?;
+        let mut entered = String::new();
+        std::io::stdin()
+            .lock()
+            .take(256)
+            .read_line(&mut entered)
+            .map_err(|_| "TN10_NAMESPACE_TRANSITION_BROADCAST_CONFIRMATION_REQUIRED")?;
+        if entered.trim() != confirmation {
+            return Err("TN10_NAMESPACE_TRANSITION_BROADCAST_CONFIRMATION_REQUIRED".into());
+        }
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| "TN10_CLOCK_INVALID")?
+            .as_secs();
+        submit_namespace_transition_with_transports(
+            input,
+            output,
+            retry_same_txid,
+            now,
+            &confirmation,
+            &mut first,
+            &mut second,
+        )
+    }
+    #[cfg(not(feature = "tn10-network"))]
+    {
+        let _ = (input, output, nodes, retry_same_txid);
+        Err("TN10_NETWORK_TRANSPORT_REQUIRED".into())
+    }
+}
+
 pub fn submit(input: &Path, output: &Path, retry_same_txid: bool) -> Result<(), Error> {
     #[cfg(feature = "tn10-network")]
     {
+        let signed = read_json(input)?;
+        if signed["schema"] == "KTAPEOUT-TN10-NATIVE-SIGNATURES-AGGREGATE-V1" {
+            use std::io::{BufRead, IsTerminal, Read, Write};
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_err(|_| "TN10_CLOCK_INVALID")?
+                .as_secs();
+            let verified =
+                crate::tn10_developer_signing::verify_native_registration_aggregate(&signed, now)?;
+            let native_transaction =
+                Transaction::try_from(serde_json::from_value::<RpcTransaction>(
+                    verified["transaction"].clone(),
+                )?)?;
+            let txid = native_transaction.id().to_string();
+            let endpoints = verification_endpoints(&json!({"network":NETWORK,"nodes":[]}))?;
+            let mut first = WrpcTransport::connect(&endpoints[0])?;
+            let mut second = WrpcTransport::connect(&endpoints[1])?;
+            if retry_same_txid {
+                let previous = read_json(output)?;
+                let reconciled = reconcile_native_registration_submission_with_transports(
+                    &signed["plan"],
+                    &previous,
+                    &verified["transaction"],
+                    &txid,
+                    &mut first,
+                    &mut second,
+                )?;
+                if reconciled["readback_status"] != "NOT_FOUND_BOTH_RETRY_REQUIRES_REVIEW" {
+                    return Err("TN10_REGISTRATION_RETRY_REQUIRES_READBACK_REVIEW".into());
+                }
+            }
+            let input_readback = verify_native_registration_inputs_with_transports(
+                &signed["plan"],
+                &mut first,
+                &mut second,
+            )?;
+            if !std::io::stdin().is_terminal() {
+                return Err("TN10_REGISTRATION_BROADCAST_TERMINAL_REQUIRED".into());
+            }
+            let confirmation = format!("BROADCAST {txid}");
+            eprintln!(
+                "{}",
+                serde_json::to_string_pretty(&json!({
+                    "network":NETWORK,
+                    "txid":txid,
+                    "authorization_sha256":signed["authorization_sha256"],
+                    "input_readback":input_readback,
+                    "retry_same_txid":retry_same_txid
+                }))?
+            );
+            eprint!("Type {confirmation} to submit this exact transaction: ");
+            std::io::stderr()
+                .flush()
+                .map_err(|_| "TN10_REGISTRATION_BROADCAST_CONFIRMATION_REQUIRED")?;
+            let mut entered = String::new();
+            std::io::stdin()
+                .lock()
+                .take(256)
+                .read_line(&mut entered)
+                .map_err(|_| "TN10_REGISTRATION_BROADCAST_CONFIRMATION_REQUIRED")?;
+            if entered.trim() != confirmation {
+                return Err("TN10_REGISTRATION_BROADCAST_CONFIRMATION_REQUIRED".into());
+            }
+            return submit_with_transport_retry(input, output, retry_same_txid, &mut first);
+        }
         let endpoint =
             std::env::var("KTAPE_TN10_ENDPOINT").map_err(|_| "TN10_ENDPOINT_REQUIRED")?;
         let mut transport = WrpcTransport::connect(&endpoint)?;
@@ -3662,6 +4463,15 @@ pub fn dual_fee_quote_with_transports(
         "endpoints":endpoints,
         "observed_at":chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
     }))
+}
+
+#[cfg(feature = "tn10-network")]
+pub fn namespace_transition_fee_quote(nodes: &[String]) -> Result<Value, Error> {
+    let request = json!({"network":NETWORK,"nodes":nodes});
+    let endpoints = verification_endpoints(&request)?;
+    let mut first = WrpcTransport::connect(&endpoints[0])?;
+    let mut second = WrpcTransport::connect(&endpoints[1])?;
+    dual_fee_quote_with_transports(&request, &mut first, &mut second)
 }
 
 fn parse_tn10_priority_fee_rate(value: &Value) -> Result<f64, String> {

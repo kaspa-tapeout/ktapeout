@@ -1,0 +1,34 @@
+[package]
+name = "ktapeout-registry-issuer"
+version = "0.5.0"
+edition = "2024"
+autobins = false
+publish = false
+
+[lib]
+name = "ktapeout_050_adapter_workbench"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ktape-name-namespace-issue"
+path = "src/bin/namespace_issuance_v1_plan.rs"
+
+[[bin]]
+name = "ktape-name-registration-witness"
+path = "src/bin/namespace_registry_child_registration_reference_witness.rs"
+
+[[bin]]
+name = "ktape-name-registration-codec"
+path = "src/bin/namespace_registry_child_registration_reference_codec.rs"
+
+[dependencies]
+hex = "0.4"
+kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+kaspa-rpc-core = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+kaspa-txscript = { git = "https://github.com/kaspanet/rusty-kaspa", rev = "01b532e8b553523216471682649693af92f0fd16" }
+ktapeout-core = { path = "../../rust-core" }
+secp256k1 = { version = "0.29", features = ["global-context", "rand-std", "serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+sha2 = "0.10"
+silverscript-lang = { package = "ktapeout-050-silverscript-compat", path = "vendor/ktapeout-050-silverscript-compat" }

@@ -4,5 +4,6 @@ members = [
     "core/rust-core",
     "core/rust-kaspa-verifier",
     "core/rust-runtime",
+    "core/adapters/registry-issuer",
 ]
 resolver = "2"

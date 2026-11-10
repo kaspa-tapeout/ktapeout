@@ -1,0 +1,36 @@
+{
+  "schema": "KTAPEOUT-NAMESPACE-REGISTRY-CHILD-UNSIGNED-INPUT-V1",
+  "network": "testnet-10",
+  "parent_covenant_id": "1111111111111111111111111111111111111111111111111111111111111111",
+  "parent_utxo": {
+    "outpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0",
+    "amount": 1500000000,
+    "script_public_key": "000051",
+    "block_daa_score": 1,
+    "covenant_id": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "gap_utxo": {
+    "outpoint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:0",
+    "amount": 4000000000,
+    "script_public_key": "000051",
+    "block_daa_score": 1,
+    "covenant_id": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "fee_utxo": {
+    "outpoint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:0",
+    "amount": 2000000000,
+    "script_public_key": "000051",
+    "block_daa_score": 1,
+    "covenant_id": null
+  },
+  "input_signature_scripts": ["", "", ""],
+  "outputs": [
+    {"role": "parent_successor", "value": 1500000000, "script_public_key": "000051", "covenant_id": "1111111111111111111111111111111111111111111111111111111111111111", "authorizing_input": 0},
+    {"role": "left_gap", "value": 1000000000, "script_public_key": "000051", "covenant_id": "1111111111111111111111111111111111111111111111111111111111111111", "authorizing_input": 1},
+    {"role": "name_deed", "value": 1000000000, "script_public_key": "000051", "covenant_id": "1111111111111111111111111111111111111111111111111111111111111111", "authorizing_input": 1},
+    {"role": "right_gap", "value": 1000000000, "script_public_key": "000051", "covenant_id": "1111111111111111111111111111111111111111111111111111111111111111", "authorizing_input": 1},
+    {"role": "fee_change", "value": 1999000000, "script_public_key": "000051", "covenant_id": null, "authorizing_input": null}
+  ],
+  "compute_budget": 10,
+  "fee_sompi": 1001000000
+}

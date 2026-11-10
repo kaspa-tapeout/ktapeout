@@ -1,0 +1,22 @@
+{
+  "codec_id": "namespace-lifecycle-candidate-v5",
+  "wire_version": 5,
+  "status": "ENGINEERING_CANDIDATE_NOT_L1_ADMITTED",
+  "network": "testnet-10",
+  "source_functions": {"parent": "source_recovery_parent_v4", "child": "source_gap_writer_parent_bootstrap_recovery_v5"},
+  "state_constructor_order": {
+    "parent": ["namespaceHash", "authorityCommitment", "resolverPolicyHash", "registryRoot", "nonce"],
+    "child": ["objectKind", "nonce", "gapLo", "gapHi", "hiIsMax", "nameKey", "controllerCommitment", "targetCommitment", "targetAuthorityCommitment", "resolverPolicyHash", "bondSompi", "namespaceHash", "parentTemplateHash", "parentPrefixLen", "parentSuffixLen"]
+  },
+  "operations": {
+    "GENESIS": {"inputs": ["funding"], "outputs": ["parent_state", "initial_gap", "fee_change"]},
+    "REGISTER_INTERIOR": {"inputs": ["parent_namespace_state", "containing_gap_state", "fee_input"], "outputs": ["parent_successor", "left_gap", "name_deed", "right_gap", "fee_change"]},
+    "REGISTER_SLOT": {"inputs": ["parent_namespace_state", "containing_gap_state", "fee_input"], "outputs": ["parent_successor", "name_deed", "fee_change"]},
+    "CHANGE_OWNER_TARGET": {"inputs": ["child_deed", "fee_input"], "outputs": ["deed_successor", "fee_change"]},
+    "RELEASE_NAME": {"inputs": ["child_deed", "fee_input"], "outputs": ["released_gap", "owner_refund", "fee_change"]},
+    "MERGE_GAPS": {"inputs": ["left_gap", "right_gap", "fee_input"], "outputs": ["merged_gap", "fee_change"]},
+    "CLOSE_NAMESPACE": {"inputs": ["namespace_parent", "full_gap", "fee_input"], "outputs": ["namespace_refund", "fee_change"]}
+  },
+  "transaction_signature": "native_schnorr_sighash_all",
+  "identity_limits": ["raw_name_key_only_no_canonical_uri_admission", "not_an_official_namespace_deployment", "does_not_upgrade_existing_utxos"]
+}

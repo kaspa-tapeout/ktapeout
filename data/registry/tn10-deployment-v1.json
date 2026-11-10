@@ -1,0 +1,23 @@
+{
+  "schema": "KTAPEOUT-REGISTRY-DEPLOYMENT-V1",
+  "network": "testnet-10",
+  "adapter_id": "ktape.official.adapter.registry",
+  "adapter_semver": "1.0.0",
+  "root_covenant_id": "4e5507386557eb92c0cbce76ce0c90f8bd8e265ea9bb3d331a49ad947ce61bb4",
+  "root_genesis_txid": "ebe97fb36f218510a05d6bc2daf4f1a4bfa666e1b52e31dde2c5862492230613",
+  "historical_namespace_issue_txid": "dd946349999b2c501525570202190dcac37d99595401a886460128384cf42152",
+  "namespace_parent_minimum_sompi": 1000000000,
+  "app_gap_minimum_sompi": 100000000,
+  "certificate_carrier_sompi": 100000000,
+  "name_deed_minimum_sompi": 100000000,
+  "child_registration_net_lock_sompi": 200000000,
+  "evidence_status": "RETAINED_TN10_DEPLOYMENT_RECORDS",
+  "current_state_checked": false,
+  "signing_authorization": false,
+  "notes": [
+    "These amounts describe Registry Adapter 1.0.0, not frozen NamespaceIssuanceV1 or CompactV1.",
+    "Root Gap splitting can require additional carriers; derive total funding from the exact transaction.",
+    "Historical identity is not evidence that an outpoint remains unspent. Refresh from two independent TN10 nodes.",
+    "Each developer supplies their own namespace authority and fee wallet. This file grants no signing or broadcast authority."
+  ]
+}
