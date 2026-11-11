@@ -7,11 +7,11 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::fs;
 
-fn xonly(secret: [u8; 32]) -> String {
+fn xonly(synthetic_scalar: [u8; 32]) -> String {
     let secp = Secp256k1::new();
-    let secret = SecretKey::from_slice(&secret).unwrap();
+    let synthetic_scalar = SecretKey::from_slice(&synthetic_scalar).unwrap();
     hex::encode(
-        Keypair::from_secret_key(&secp, &secret)
+        Keypair::from_secret_key(&secp, &synthetic_scalar)
             .x_only_public_key()
             .0
             .serialize(),
@@ -19,7 +19,7 @@ fn xonly(secret: [u8; 32]) -> String {
 }
 
 fn request() -> Value {
-    let claimant = xonly([2; 32]);
+    let claimant = xonly([93; 32]);
     let funder = xonly([3; 32]);
     let mut frame = vec![0u8; 64];
     frame[0] = 6;

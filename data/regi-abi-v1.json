@@ -1,0 +1,59 @@
+{
+  "schema": "KTAPEOUT-REGISTRY-ADAPTER-WITNESS-ABI-V1",
+  "adapter_id": "ktape.official.adapter.registry",
+  "adapter_semver": "1.0.0",
+  "evidence_scope": "Argument order from authorize_child/register_interior; checked against four compiler reconstructions.",
+  "signature_slots": {
+    "parent": [
+      6
+    ],
+    "child": [
+      11,
+      13,
+      22
+    ]
+  },
+  "parent": [
+    "namespace_hash",
+    "authority_commitment",
+    "resolver_policy_hash",
+    "registry_root",
+    "nonce",
+    "authority_xonly",
+    "signature",
+    "zero",
+    "parent_redeem"
+  ],
+  "child": [
+    "next_state_0",
+    "next_state_1",
+    "next_state_2",
+    "next_state_3",
+    "next_state_4",
+    "next_state_5",
+    "next_state_6",
+    "next_state_7",
+    "next_state_8",
+    "next_state_9",
+    "next_state_10",
+    "signature",
+    "claimant_xonly",
+    "signature",
+    "target_authority_xonly",
+    "name_key",
+    "namespace_frame",
+    "slug_frame",
+    "target_commitment",
+    "child_resolver_policy_hash",
+    "bond_sompi",
+    "successor_key",
+    "signature",
+    "authority_xonly",
+    "zero",
+    "zero",
+    "parent_prefix",
+    "parent_suffix",
+    "zero",
+    "gap_redeem"
+  ]
+}

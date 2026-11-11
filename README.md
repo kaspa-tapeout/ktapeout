@@ -9,7 +9,7 @@ KTAPEOUT connects application identity, reusable components, development tools, 
 
 **Repository and website:** this repository contains the protocol and tools; [ktapeout.xyz](https://ktapeout.xyz) hosts running demos.
 
-**Quick links:** [Website](https://ktapeout.xyz) · [Live demo (DAG Knight)](https://ktapeout.xyz/app/testnet-10/ktapedemo/game-dagknight) · [KasNote](https://ktapeout.xyz/app/testnet-10/ktapedemo/kasnote) · [Registry](https://ktapeout.xyz/app/testnet-10/ktape/registry) · [Docs](docs/index.md) · [Capabilities](docs/reference/capabilities-and-status.md) · [Releases](https://github.com/kaspa-tapeout/ktapeout/releases) · [Security](SECURITY.md) · [Issues](https://github.com/kaspa-tapeout/ktapeout/issues)
+**Quick links:** [Website](https://ktapeout.xyz) · [Application directory](https://ktapeout.xyz/applications) · [Docs](docs/index.md) · [Capabilities](docs/reference/capabilities-and-status.md) · [Releases](https://github.com/kaspa-tapeout/ktapeout/releases) · [Security](SECURITY.md) · [Issues](https://github.com/kaspa-tapeout/ktapeout/issues)
 
 <a href="docs/reference/capabilities-and-status.md"><img src="docs/assets/badge-preview.svg" alt="Developer preview · Testnet-10 only" height="20"></a> <a href=".github/workflows/ci.yml"><img src="docs/assets/badge-ci.svg" alt="CI workflow" height="20"></a>
 
@@ -37,12 +37,15 @@ cargo run --locked -p ktapeout-cli -- app test ./my-app/source-manifest.json
 | Name registration in that developer-owned namespace | ![LIVE_TN10 evidence](docs/assets/badge-live-tn10.svg) | Public CLI authorization, signing, assembly and submission; name Deed confirmed on two nodes. Existing CompactV1 namespaces are excluded. |
 
 Evidence legend: `LOCAL_OK` = deterministic local evidence; `LIVE_TN10` = documented Testnet-10 evidence; `MOCK_OR_VM` = fixture or virtual-machine evidence.
+The `ktape app publish <namespace>/<slug>` planning frontend has `MOCK_OR_VM`
+evidence only. The live name-registration canary used `name register-request`
+and `name register-plan`; it does not establish live validation of `app publish`.
 See the full [capabilities and status matrix](docs/reference/capabilities-and-status.md) for scope and evidence details.
 
 ## Not included in this preview
 
 - This repository does not include Studio, Browser SDK, or wallet providers. ktapeout.xyz provides independent Testnet-10 demos; browsing requires no wallet. The demo frontend source is not in this repository, and its version may differ from this preview.
-- Registration in the existing CompactV1 namespaces `ktape`, `ktapedemo`, or `ktapeout`.
+- Registration in existing namespaces in the frozen CompactV1 family.
 - Payload storage adapters, including HTTPS, Arweave, Google Drive, or R2.
 - The capabilities and status matrix is authoritative. Name registration does not upload an application or provide payload retention.
 

@@ -433,6 +433,19 @@ enum RecordAction {
 
 #[derive(Debug, Subcommand)]
 enum AppAction {
+    /// Plan official-registry child registration; does not sign or broadcast.
+    #[cfg(feature = "tn10-network")]
+    Publish {
+        target: String,
+        #[arg(long, default_value = "testnet-10")]
+        network: String,
+        #[arg(long)]
+        intent: PathBuf,
+        #[arg(long)]
+        names_file: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+    },
     Scaffold {
         template: String,
         #[arg(long, default_value = "testnet-10")]
@@ -15529,6 +15542,18 @@ fn run(cli: Cli) -> Result<(), String> {
         Command::App { action } => match action {
             AppAction::Scaffold { template, network } => scaffold(template, network),
             AppAction::Quickstart { template, network } => quickstart(template, network),
+            #[cfg(feature = "tn10-network")]
+            AppAction::Publish {
+                target,
+                network,
+                intent,
+                names_file,
+                output,
+            } => {
+                tn10_pipeline::app_publish(&target, &network, &intent, &names_file, &output)
+                    .map_err(|error| error.to_string())?;
+                emit_result("ktape app publish", Some("testnet-10"), read_json(&output)?)
+            }
             AppAction::Validate { manifest } => validate_manifest(manifest),
             AppAction::Check { manifest, network } => check_manifest(manifest, network),
             AppAction::Inspect { manifest } => inspect(manifest),

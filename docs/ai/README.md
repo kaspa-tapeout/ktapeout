@@ -19,7 +19,7 @@ protocol changes, generated code, dependencies and commands before execution.
 
 ## AI task workflow
 
-1. Confirm whether the checkout is the minimal public protocol candidate or the full engineering distribution. The public candidate includes the reviewed static adapter registry and a Host-free TN10 name-registration preview on the V6 reference path; end-to-end validation for existing CompactV1 namespaces is incomplete. It does not include Studio, a live publisher, or every engineering adapter. Inspect `ktape release adapters` before choosing a release path.
+1. Confirm whether the checkout is the minimal public protocol candidate or the full engineering distribution. The public candidate includes the reviewed static adapter registry and a Host-free TN10 name-registration preview on the isolated V6 sovereign-lineage reference path (not the public developer path); end-to-end validation for existing `ktape.official.adapter.registry` 1.0.0 namespaces is incomplete. It does not include Studio, a live publisher, or every engineering adapter. Inspect `ktape release adapters` before choosing a release path.
 2. Read the [current capability boundary](../reference/capabilities-and-status.md) and the relevant protocol or guide page before choosing commands.
 3. Use the installed CLI's help and the examples shipped with that exact distribution. Do not infer an executable command from a protocol concept or an older Skill.
 4. Validate locally and report the exact command, result and remaining boundary. Local validation is not chain inclusion, publisher authorization or production readiness.

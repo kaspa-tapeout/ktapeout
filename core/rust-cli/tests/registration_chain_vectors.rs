@@ -552,6 +552,45 @@ fn pinned_v21_executes_saved_9edd_transaction_with_chain_compute_budgets() {
 }
 
 #[test]
+fn pinned_v21_executes_other_three_saved_official_registration_transactions() {
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../data/registry/adapter-registry-live-vectors-v1.json"
+    ))
+    .unwrap();
+    for vector in fixture["vectors"].as_array().unwrap().iter().skip(1) {
+        let rpc: kaspa_rpc_core::RpcTransaction =
+            serde_json::from_value(vector["saved_transaction"].clone())
+                .expect("saved transaction must be present, not a claimed verification flag");
+        let tx = Transaction::try_from(rpc).unwrap();
+        assert_eq!(tx.id().to_string(), vector["txid"].as_str().unwrap());
+        let utxos = vector["saved_utxos"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|input| {
+                let script = hex::decode(input["script_public_key"].as_str().unwrap()).unwrap();
+                let version = u16::from_le_bytes(script[..2].try_into().unwrap());
+                let covenant = input["covenant_id"]
+                    .as_str()
+                    .map(|value| Hash::from_bytes(hex::decode(value).unwrap().try_into().unwrap()));
+                UtxoEntry::new(
+                    input["amount"].as_u64().unwrap(),
+                    ScriptPublicKey::from_vec(version, script[2..].to_vec()),
+                    input["block_daa_score"].as_u64().unwrap(),
+                    false,
+                    covenant,
+                )
+            })
+            .collect();
+        let metrics =
+            verify_post_toccata_populated_transaction(&PopulatedTransaction::new(&tx, utxos))
+                .expect("each saved transaction must execute in the pinned VM");
+        assert_eq!(metrics.len(), 3);
+        assert!(metrics.iter().all(|metric| metric.script_units_used > 0));
+    }
+}
+
+#[test]
 fn lowered_quality_cannot_be_used_as_a_validated_registration_plan() {
     let (_, _, plan) = registration_mass_fixture(false);
     let mut plan = plan.expect("unsigned plan was constructed");

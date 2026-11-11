@@ -7,6 +7,202 @@ use ktapeout_cli::name_state_template::{
 use serde_json::Value;
 
 #[test]
+fn official_registration_outputs_match_saved_transactions() {
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../data/registry/adapter-registry-live-vectors-v1.json"
+    ))
+    .unwrap();
+    for vector in fixture["vectors"].as_array().unwrap().iter().skip(1) {
+        let scripts =
+            ktapeout_cli::registry_templates::registration_output_scripts(&vector["state"])
+                .unwrap();
+        for (index, script) in scripts.iter().enumerate() {
+            assert_eq!(
+                script,
+                vector["saved_transaction"]["outputs"][index]["scriptPublicKey"]
+                    .as_str()
+                    .unwrap(),
+                "{} output {index}",
+                vector["txid"]
+            );
+        }
+    }
+}
+
+#[test]
+fn registration_witness_requires_both_input_script_commitments() {
+    use ktapeout_cli::registry_templates::registration_witness_for_inputs;
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../data/registry/adapter-registry-live-vectors-v1.json"
+    ))
+    .unwrap();
+    for vector in fixture["vectors"].as_array().unwrap() {
+        let scripts = ["parent_redeem_hex", "gap_redeem_hex"].map(|field| {
+            let redeem = hex::decode(vector[field].as_str().unwrap()).unwrap();
+            [
+                vec![0, 0, 0xaa, 0x20],
+                blake2b_256(&redeem).to_vec(),
+                vec![0x87],
+            ]
+            .concat()
+        });
+        assert!(registration_witness_for_inputs(&vector["state"], &scripts).is_ok());
+        let contexts = ktapeout_cli::registry_templates::registration_contexts_for_inputs(
+            &vector["state"],
+            &scripts,
+        )
+        .unwrap();
+        for (index, field) in ["parent_redeem_hex", "gap_redeem_hex"].iter().enumerate() {
+            assert_eq!(contexts[index]["input_index"], index);
+            assert_eq!(contexts[index]["redeem_script_hex"], vector[field]);
+            assert_eq!(
+                contexts[index]["arguments"].as_array().unwrap().len(),
+                [8, 29][index]
+            );
+            use ktapeout_kaspa_verifier::toccata_witness::{
+                build_toccata_p2sh_witness, AbiEntryPoint, WitnessItem,
+            };
+            let arguments: Vec<_> = contexts[index]["arguments"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|item| {
+                    if let Some(opcode) = item["opcode"].as_u64() {
+                        WitnessItem::Opcode(opcode as u8)
+                    } else {
+                        WitnessItem::Data(hex::decode(item["data_hex"].as_str().unwrap()).unwrap())
+                    }
+                })
+                .collect();
+            let rebuilt = build_toccata_p2sh_witness(
+                AbiEntryPoint::parse(contexts[index]["entrypoint"].as_str().unwrap()).unwrap(),
+                &arguments,
+                &hex::decode(vector[field].as_str().unwrap()).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(
+                hex::encode(rebuilt),
+                vector["unsigned_signature_scripts"][index]
+            );
+        }
+        for index in 0..2 {
+            let mut changed = scripts.clone();
+            changed[index][4] ^= 1;
+            assert_eq!(
+                ktapeout_cli::registry_templates::registration_contexts_for_inputs(
+                    &vector["state"],
+                    &changed,
+                )
+                .err(),
+                Some("REGISTRATION_INPUT_SCRIPT_MISMATCH")
+            );
+            assert_eq!(
+                registration_witness_for_inputs(&vector["state"], &changed).err(),
+                Some("REGISTRATION_INPUT_SCRIPT_MISMATCH"),
+                "input {index}"
+            );
+        }
+    }
+}
+
+#[test]
+fn registration_witness_rejects_unbound_name_frames_and_lineage() {
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../data/registry/adapter-registry-live-vectors-v1.json"
+    ))
+    .unwrap();
+    let original = &fixture["vectors"][0]["state"];
+    for field in ["namespace_frame", "slug_frame", "registry_root"] {
+        let mut state = original.clone();
+        let mut bytes = hex::decode(state[field].as_str().unwrap()).unwrap();
+        let index = if field.ends_with("_frame") { 2 } else { 0 };
+        bytes[index] ^= 1;
+        state[field] = hex::encode(bytes).into();
+        assert_eq!(
+            ktapeout_cli::registry_templates::registration_witness(&state).err(),
+            Some("REGISTRATION_STATE_INVALID"),
+            "{field}"
+        );
+    }
+    let mut state = original.clone();
+    let mut frame = hex::decode(state["slug_frame"].as_str().unwrap()).unwrap();
+    frame[63] = 1;
+    state["slug_frame"] = hex::encode(frame).into();
+    assert_eq!(
+        ktapeout_cli::registry_templates::registration_witness(&state).err(),
+        Some("REGISTRATION_STATE_INVALID")
+    );
+}
+
+#[test]
+fn registration_witnesses_match_four_saved_transactions() {
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../data/registry/adapter-registry-live-vectors-v1.json"
+    ))
+    .unwrap();
+    let vectors = fixture["vectors"].as_array().unwrap();
+    assert_eq!(vectors.len(), 4);
+    for vector in vectors {
+        let scripts =
+            ktapeout_cli::registry_templates::registration_witness(&vector["state"]).unwrap();
+        for (index, script) in scripts.iter().enumerate() {
+            assert_eq!(
+                hex::encode(script),
+                vector["unsigned_signature_scripts"][index]
+                    .as_str()
+                    .unwrap(),
+                "{} input {index}",
+                vector["txid"]
+            );
+        }
+    }
+}
+
+#[test]
+fn registration_redeems_match_four_saved_transactions() {
+    use ktapeout_cli::registry_templates::{
+        render, render_registration_gap, ByteWrite, RegistryTemplate,
+    };
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../data/registry/adapter-registry-live-vectors-v1.json"
+    ))
+    .unwrap();
+    let vectors = fixture["vectors"].as_array().unwrap();
+    assert_eq!(vectors.len(), 4);
+    for vector in vectors {
+        let writes = |field: &str| {
+            vector[field]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|write| ByteWrite {
+                    offset: write["offset"].as_u64().unwrap() as usize,
+                    bytes: hex::decode(write["hex"].as_str().unwrap()).unwrap(),
+                })
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            hex::encode(render(RegistryTemplate::AdapterParent, &writes("parent_writes")).unwrap()),
+            vector["parent_redeem_hex"].as_str().unwrap(),
+            "parent {}",
+            vector["txid"]
+        );
+        assert_eq!(
+            hex::encode(
+                render_registration_gap(
+                    vector["state"]["gap_hi_is_max"].as_u64().unwrap() == 1,
+                    &writes("gap_writes"),
+                )
+                .unwrap()
+            ),
+            vector["gap_redeem_hex"].as_str().unwrap(),
+            "gap {}",
+            vector["txid"]
+        );
+    }
+}
+
+#[test]
 fn matches_all_compiler_derived_deed_vectors() {
     let vectors: Value = serde_json::from_str(include_str!("fixtures/registry-deed-state-v1.json"))
         .expect("checked-in vector JSON");

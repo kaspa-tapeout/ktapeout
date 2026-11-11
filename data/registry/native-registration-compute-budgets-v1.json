@@ -45,6 +45,19 @@
         }
       ]
     },
+    "OFFICIAL_INTERIOR": {
+      "status": "MEASURED",
+      "measurement_source": {
+        "test": "pinned_v21_executes_saved_9edd_transaction_with_chain_compute_budgets",
+        "txid": "9eddc2cec1302e63a6ea1adca815186476e2a9dc2ed65c4b1c070b2603e5a354",
+        "scope": "Saved transaction execution only; other vectors and newly constructed transactions require separate VM verification."
+      },
+      "inputs": [
+        {"input_index": 0, "role": "parent", "script_kind": "p2sh-covenant", "entrypoint": "authorize_child", "script_units": 107990, "compute_budget": 256, "budget_limit": 2569999},
+        {"input_index": 1, "role": "gap", "script_kind": "p2sh-covenant", "entrypoint": "register_interior", "script_units": 459897, "compute_budget": 256, "budget_limit": 2569999},
+        {"input_index": 2, "role": "fee", "script_kind": "p2pk-schnorr", "entrypoint": "p2pk_schnorr", "script_units": 100001, "compute_budget": 10, "budget_limit": 109999}
+      ]
+    },
     "SLOT": {
       "status": "UNMEASURED",
       "reason": "No pinned-v2.1.0 SLOT fixture measurement is included; requests using SLOT must be rejected."

@@ -99,7 +99,7 @@ def prepare(args):
             "keys": [{"namespace": args.namespace, "key_hex": source["namespace_hash"],
                       "evidence_ref": args.issuance_txid}]}
     return {"network": "testnet-10", "namespace": args.namespace, "slug": args.slug,
-            "owner": fee_view["address"], "namespace_key_sources": [keys], "estimated_mass": 1200,
+            "owner": fee_view["address"], "namespace_key_sources": [keys],
             "nodes": fee_view["nodes"], "states": [{"role": "deed", "script_public_key": parent["script_public_key"]}],
             "gap_candidates": [{"gap": {"lo": source["gap_lo"], "hi": source["gap_hi"],
                                          "hiIsMax": source["gap_hi_is_max"]},

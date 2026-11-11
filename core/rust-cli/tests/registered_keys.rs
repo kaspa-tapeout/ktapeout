@@ -2899,6 +2899,98 @@ fn registration_request_seed(gap: &str, deed: &str) -> Value {
     request
 }
 
+#[test]
+fn official_registration_request_binds_backup_to_observed_inputs_and_names() {
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../data/registry/adapter-registry-live-vectors-v1.json"
+    ))
+    .unwrap();
+    let vector = &fixture["vectors"][1];
+    let script = |field: &str| {
+        format!(
+            "0000aa20{}87",
+            hex::encode(ktapeout_cli::name_state_template::blake2b_256(
+                &hex::decode(vector[field].as_str().unwrap()).unwrap()
+            ))
+        )
+    };
+    let gap = script("gap_redeem_hex");
+    let parent = script("parent_redeem_hex");
+    let mut seed = registration_request_seed(&gap, &parent);
+    // The vector state binds to the keys of its recorded names, so follow the vector instead of substituting
+    // others: decode the namespace and slug from its length-prefixed frames.
+    let frame_text = |field: &str| {
+        let bytes = hex::decode(vector["state"][field].as_str().unwrap()).unwrap();
+        String::from_utf8(bytes[1..1 + usize::from(bytes[0])].to_vec()).unwrap()
+    };
+    let (namespace, slug) = (frame_text("namespace_frame"), frame_text("slug_frame"));
+    seed["namespace"] = json!(namespace);
+    seed["slug"] = json!(slug);
+    seed["registration_state"] = vector["state"].clone();
+    for (role, field) in [
+        ("parent", "authority_xonly"),
+        ("parent_for_child", "authority_xonly"),
+        ("claimant", "claimant_xonly"),
+        ("target", "target_authority_xonly"),
+    ] {
+        seed["native_transaction_input"]["role_public_keys"][role] = vector["state"][field].clone();
+    }
+    seed["native_transaction_input"]["covenant_witness_contexts"] = json!([]);
+    let names = json!({"schema":"KTAPEOUT-REGISTERED-NAMES-V1",
+        "network":"testnet-10", "namespace":namespace, "slugs":[]});
+    let run = |request: &Value| {
+        let mock = || {
+            let mut mock = registration_registry_mock(&gap, &parent);
+            for entries in mock.entries.iter_mut().take(2) {
+                let mut typed: Vec<RpcUtxosByAddressesEntry> =
+                    serde_json::from_value(entries.clone()).unwrap();
+                typed[0].utxo_entry.covenant_id = Some(
+                    vector["state"]["registry_root"]
+                        .as_str()
+                        .unwrap()
+                        .parse()
+                        .unwrap(),
+                );
+                *entries = serde_json::to_value(typed).unwrap();
+            }
+            mock
+        };
+        registry_request_with_names_and_transports(request, &names, &mut mock(), &mut mock())
+    };
+    let result = run(&seed).unwrap();
+    let input = &result["request"]["native_transaction_input"];
+    assert_eq!(
+        input["covenant_witness_contexts"].as_array().unwrap().len(),
+        2
+    );
+    assert_eq!(
+        input["covenant_witness_contexts"][1]["arguments"]
+            .as_array()
+            .unwrap()
+            .len(),
+        29
+    );
+    assert_eq!(input["inputs"][0]["compute_budget"], 256);
+    assert_eq!(input["inputs"][1]["compute_budget"], 256);
+    let expected =
+        ktapeout_cli::registry_templates::registration_output_scripts(&seed["registration_state"])
+            .unwrap();
+    for (index, script) in expected.iter().enumerate() {
+        assert_eq!(input["outputs"][index]["script_public_key"], *script);
+    }
+    for field in ["authority_commitment", "gap_lo", "name_key"] {
+        let mut changed = seed.clone();
+        changed["registration_state"][field] = json!("11".repeat(32));
+        assert!(run(&changed).is_err(), "unbound {field} must be rejected");
+    }
+    let mut changed = seed.clone();
+    changed["slug"] = json!("different-name");
+    assert!(
+        run(&changed).is_err(),
+        "backup must bind the requested name"
+    );
+}
+
 fn decode_witness_pushes(script: &[u8]) -> Vec<Value> {
     let mut items = Vec::new();
     let mut cursor = 0usize;
@@ -2937,6 +3029,37 @@ fn decode_witness_pushes(script: &[u8]) -> Vec<Value> {
         cursor = end;
     }
     items
+}
+
+#[test]
+fn app_publish_exposes_official_planning_and_rejects_mainnet_before_io() {
+    let run = |args: &[&str]| {
+        std::process::Command::new(env!("CARGO_BIN_EXE_ktape"))
+            .args(args)
+            .output()
+            .unwrap()
+    };
+    let help = run(&["app", "publish", "--help"]);
+    assert!(
+        help.status.success(),
+        "{}",
+        String::from_utf8_lossy(&help.stderr)
+    );
+    let result = run(&[
+        "app",
+        "publish",
+        "demo/starter",
+        "--network",
+        "mainnet",
+        "--intent",
+        "does-not-exist.json",
+        "--names-file",
+        "does-not-exist.json",
+        "--output",
+        "must-not-be-created.json",
+    ]);
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("TN10_NETWORK_REJECTED"));
 }
 
 #[test]

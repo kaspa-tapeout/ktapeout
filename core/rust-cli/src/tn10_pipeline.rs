@@ -3565,20 +3565,29 @@ fn verification_endpoints(evidence: &Value) -> Result<[String; 2], Error> {
 }
 
 fn verification_target(evidence: &Value) -> Result<(Transaction, String, String), Error> {
-    let plan = &evidence["plan"];
-    if plan["network"] != NETWORK || plan["schema"] != "KTAPEOUT-TN10-PLAN-V1" {
-        return Err("TN10_PLAN_INVALID".into());
-    }
-    let rpc: RpcTransaction = serde_json::from_value(plan["transaction"].clone())?;
-    let expected = Transaction::try_from(rpc)?;
-    let payload: Value = serde_json::from_slice(&expected.payload)?;
-    if payload["network"] != NETWORK
-        || payload["schema"] != SCHEMA
-        || !plan["artifact_root"].is_string()
-        || payload["artifact"]["artifact_sha256"] != plan["artifact_root"]
-    {
-        return Err("TN10_TARGET_MISMATCH".into());
-    }
+    let expected = if evidence["schema"] == "KTAPEOUT-TN10-REGISTRY-VERIFY-V1" {
+        if evidence["network"] != NETWORK || evidence.get("plan").is_some() {
+            return Err("TN10_REGISTRY_VERIFY_REQUEST_INVALID".into());
+        }
+        let rpc: RpcTransaction = serde_json::from_value(evidence["transaction"].clone())?;
+        Transaction::try_from(rpc)?
+    } else {
+        let plan = &evidence["plan"];
+        if plan["network"] != NETWORK || plan["schema"] != "KTAPEOUT-TN10-PLAN-V1" {
+            return Err("TN10_PLAN_INVALID".into());
+        }
+        let rpc: RpcTransaction = serde_json::from_value(plan["transaction"].clone())?;
+        let expected = Transaction::try_from(rpc)?;
+        let payload: Value = serde_json::from_slice(&expected.payload)?;
+        if payload["network"] != NETWORK
+            || payload["schema"] != SCHEMA
+            || !plan["artifact_root"].is_string()
+            || payload["artifact"]["artifact_sha256"] != plan["artifact_root"]
+        {
+            return Err("TN10_TARGET_MISMATCH".into());
+        }
+        expected
+    };
     let txid = evidence["txid"]
         .as_str()
         .ok_or("TN10_TRANSACTION_ID_REQUIRED")?;
@@ -4102,12 +4111,20 @@ fn normalize_registry_request(input: &Value) -> Result<Value, Error> {
     Ok(request.clone())
 }
 
-fn attach_measured_registration_compute_budgets(input: &mut Value) -> Result<(), Error> {
+fn attach_measured_registration_compute_budgets(
+    input: &mut Value,
+    official: bool,
+) -> Result<(), Error> {
     let kind = input["registration_kind"]
         .as_str()
         .ok_or("TN10_REGISTRATION_KIND_INVALID")?;
     let data: Value = serde_json::from_str(NATIVE_REGISTRATION_COMPUTE_BUDGETS)?;
-    let profile = data["profiles"][kind].as_object().ok_or_else(|| {
+    let profile_key = if official && kind == "INTERIOR" {
+        "OFFICIAL_INTERIOR"
+    } else {
+        kind
+    };
+    let profile = data["profiles"][profile_key].as_object().ok_or_else(|| {
         if kind == "SLOT" {
             "TN10_REGISTRATION_COMPUTE_BUDGET_UNMEASURED"
         } else {
@@ -4375,8 +4392,99 @@ pub fn registry_request_with_names_and_transports(
             tx_inputs[target_index]["amount"] = utxo["amount"].clone();
             tx_inputs[target_index]["block_daa_score"] = utxo["block_daa_score"].clone();
             tx_inputs[target_index]["script_public_key"] = utxo["script_public_key"].clone();
+            if seed.get("registration_state").is_some() {
+                tx_inputs[target_index]["covenant_id"] = utxo["covenant_id"].clone();
+            }
         }
         tx_inputs[2].clone()
+    };
+    let official = if let Some(state) = seed.get("registration_state") {
+        let gap = &selected[0].1;
+        if state["namespace_hash"].as_str()
+            != Some(crate::registered_keys::namespace_key(namespace)?.as_str())
+            || state["name_key"].as_str() != Some(target.as_str())
+            || state["gap_lo"].as_str() != Some(gap.lo.as_str())
+            || state["gap_hi"].as_str() != Some(gap.hi.as_str())
+            || state["gap_hi_is_max"].as_u64() != Some(u64::from(gap.hi_is_max))
+        {
+            return Err("REGISTRATION_STATE_REQUEST_MISMATCH".into());
+        }
+        let scripts = [0, 1].map(|index| {
+            request["native_transaction_input"]["inputs"][index]["script_public_key"]
+                .as_str()
+                .ok_or("TN10_SCRIPT_REQUIRED")
+                .and_then(|script| hex::decode(script).map_err(|_| "TN10_SCRIPT_INVALID"))
+        });
+        let [parent, gap] = scripts;
+        let contexts =
+            crate::registry_templates::registration_contexts_for_inputs(state, &[parent?, gap?])?;
+        for index in 0..2 {
+            if request["native_transaction_input"]["inputs"][index]["covenant_id"]
+                != state["registry_root"]
+            {
+                return Err("REGISTRATION_COVENANT_LINEAGE_MISMATCH".into());
+            }
+        }
+        for (role, field) in [
+            ("parent", "authority_xonly"),
+            ("parent_for_child", "authority_xonly"),
+            ("claimant", "claimant_xonly"),
+            ("target", "target_authority_xonly"),
+        ] {
+            if request["native_transaction_input"]["role_public_keys"][role] != state[field] {
+                return Err("REGISTRATION_ROLE_KEY_MISMATCH".into());
+            }
+        }
+        request["native_transaction_input"]["covenant_witness_contexts"] = contexts;
+        let native = &mut request["native_transaction_input"];
+        let old_total = native["outputs"]
+            .as_array()
+            .ok_or("TN10_REGISTRATION_OUTPUTS_REQUIRED")?
+            .iter()
+            .take(4)
+            .try_fold(0u64, |sum, item| sum.checked_add(item["value"].as_u64()?))
+            .ok_or("TN10_REGISTRATION_VALUE_OVERFLOW")?;
+        let gap_amount = native["inputs"][1]["amount"]
+            .as_u64()
+            .ok_or("TN10_REGISTRATION_INPUT_AMOUNT_INVALID")?;
+        let bond = state["bond_sompi"]
+            .as_u64()
+            .ok_or("REGISTRATION_STATE_INVALID")?;
+        let values = [
+            native["inputs"][0]["amount"]
+                .as_u64()
+                .ok_or("TN10_REGISTRATION_INPUT_AMOUNT_INVALID")?,
+            gap_amount.saturating_sub(100_000_000).max(100_000_000),
+            bond,
+            100_000_000,
+        ];
+        let new_total = values
+            .iter()
+            .try_fold(0u64, |sum, value| sum.checked_add(*value))
+            .ok_or("TN10_REGISTRATION_VALUE_OVERFLOW")?;
+        let change = native["outputs"][4]["value"]
+            .as_u64()
+            .ok_or("TN10_REGISTRATION_FEE_CHANGE_INVALID")?
+            .checked_add(old_total)
+            .and_then(|total| total.checked_sub(new_total))
+            .filter(|value| *value > 0)
+            .ok_or("TN10_REGISTRATION_FEE_CHANGE_INVALID")?;
+        native["outputs"][4]["value"] = json!(change);
+        for (index, script) in crate::registry_templates::registration_output_scripts(state)?
+            .into_iter()
+            .enumerate()
+        {
+            request["native_transaction_input"]["outputs"][index]["script_public_key"] =
+                json!(script);
+            request["native_transaction_input"]["outputs"][index]["value"] = json!(values[index]);
+            request["native_transaction_input"]["outputs"][index]["covenant_id"] =
+                state["registry_root"].clone();
+            request["native_transaction_input"]["outputs"][index]["authorizing_input"] =
+                json!(usize::from(index != 0));
+        }
+        true
+    } else {
+        false
     };
     let previous_fee_amount = fee_input["amount"]
         .as_u64()
@@ -4415,7 +4523,10 @@ pub fn registry_request_with_names_and_transports(
     tx_inputs[2]["amount"] = live_fee_utxo["amount"].clone();
     tx_inputs[2]["block_daa_score"] = live_fee_utxo["block_daa_score"].clone();
     tx_inputs[2]["script_public_key"] = live_fee_utxo["script_public_key"].clone();
-    attach_measured_registration_compute_budgets(&mut request["native_transaction_input"])?;
+    attach_measured_registration_compute_budgets(
+        &mut request["native_transaction_input"],
+        official,
+    )?;
     Ok(json!({
         "schema":"KTAPEOUT-TN10-REGISTER-REQUEST-V1",
         "request":request,
@@ -4713,6 +4824,43 @@ pub fn registry_register_plan(
 }
 
 /// Read-only command implementation for deriving a name-registration request from local names.
+pub fn app_publish(
+    target: &str,
+    network: &str,
+    intent_path: &Path,
+    names_path: &Path,
+    output: &Path,
+) -> Result<(), Error> {
+    if network != NETWORK {
+        return Err("TN10_NETWORK_REJECTED".into());
+    }
+    let (namespace, slug) = target.split_once('/').ok_or("NAME_TARGET_INVALID")?;
+    crate::registered_keys::namespace_key(namespace)?;
+    crate::registered_keys::child_name_key(namespace, slug)?;
+    validate_input_output_paths(intent_path, output)?;
+    validate_input_output_paths(names_path, output)?;
+    let mut intent = read_json(intent_path)?;
+    if intent["network"] != NETWORK || intent["namespace"] != namespace || intent["slug"] != slug {
+        return Err("REGISTRATION_STATE_REQUEST_MISMATCH".into());
+    }
+    if !intent["registration_state"].is_object() {
+        return Err("REGISTRATION_OFFICIAL_STATE_REQUIRED".into());
+    }
+    let names = read_json(names_path)?;
+    let endpoints_from_evidence = std::env::var_os("KTAPE_TN10_ENDPOINTS").is_none();
+    let endpoints = verification_endpoints(&intent)?;
+    intent["nodes"] = json!(endpoints);
+    let mut first = WrpcTransport::connect(&endpoints[0])?;
+    let mut second = WrpcTransport::connect(&endpoints[1])?;
+    let request =
+        registry_request_with_names_and_transports(&intent, &names, &mut first, &mut second)?;
+    let mut result = registry_register_plan_with_transports(&request, &mut first, &mut second)?;
+    result["endpoints_from_evidence"] = json!(endpoints_from_evidence);
+    result["validation_level"] = json!("MOCK_OR_VM");
+    replace_json_atomic(output, &result)
+}
+
+/// Compatibility entry point; prefer `ktape app publish` for official-registry plans.
 pub fn registry_request_from_names(
     intent_path: &Path,
     names_path: &Path,

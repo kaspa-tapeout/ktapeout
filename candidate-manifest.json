@@ -9,7 +9,7 @@
   "documentation_refresh": "Developer-owned namespace genesis and issuance under the current TN10 ktape root, child registration using the V6 named witness ABI, public request preparation and recovery guidance; limited dual-node canary evidence. Existing CompactV1 namespaces, Browser SDK, Studio and payload storage remain excluded.",
   "code_refresh": "Public registry issuer and witness/body codecs; bounded developer authorization, local signing, canonical transaction assembly, live two-node UTXO validation and TN10 submission. Pinned Kaspa v2.1.0.",
   "inventory": {
-    "file_count": 259,
+    "file_count": 265,
     "rust_source_file_count": 120,
     "test_source_file_count": 19,
     "rust_crate_count": 4,

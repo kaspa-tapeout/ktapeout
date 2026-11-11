@@ -27,10 +27,10 @@ pub fn generate_tn10_test_key(output: &Path) -> Result<Value, Error> {
     if !parent.starts_with(&temp) || output.exists() {
         return Err("TN10_TEST_KEY_PATH_UNSAFE_OR_EXISTS".into());
     }
-    let secret = SecretKey::new(&mut secp256k1::rand::thread_rng());
-    let pair = Keypair::from_secret_key(&Secp256k1::new(), &secret);
+    let generated_key = SecretKey::new(&mut secp256k1::rand::thread_rng());
+    let pair = Keypair::from_secret_key(&Secp256k1::new(), &generated_key);
     let (public, _) = pair.x_only_public_key();
-    let secret_hex = Zeroizing::new(hex::encode(secret.secret_bytes()));
+    let secret_hex = Zeroizing::new(hex::encode(generated_key.secret_bytes()));
     let mut options = fs::OpenOptions::new();
     options.write(true).create_new(true);
     #[cfg(unix)]
@@ -63,8 +63,8 @@ pub fn generate_tn10_test_key(output: &Path) -> Result<Value, Error> {
 /// The secret uses the same protected-file checks and zeroizing buffer as signing.
 #[cfg(feature = "tn10-network")]
 pub fn inspect_tn10_test_key(path: &Path) -> Result<Value, Error> {
-    let secret = SecretMaterial::file(path)?;
-    let secret_key = SecretKey::from_slice(&secret.0[..])?;
+    let key_material = SecretMaterial::file(path)?;
+    let secret_key = SecretKey::from_slice(&key_material.0[..])?;
     let keypair = Keypair::from_secret_key(&Secp256k1::new(), &secret_key);
     let (public, _) = keypair.x_only_public_key();
     let address = kaspa_rpc_core::RpcAddress::new(

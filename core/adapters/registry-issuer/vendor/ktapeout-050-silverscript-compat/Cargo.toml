@@ -2,7 +2,7 @@
 name = "ktapeout-050-silverscript-compat"
 version = "0.5.0"
 edition = "2024"
-license = "MIT"
+license = "ISC"
 description = "Pinned SilverScript compiler compatibility layer for the KTAPEOUT 0.5.0 TN10 adapter workbench"
 rust-version = "1.91.0"
 

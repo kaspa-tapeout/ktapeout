@@ -1,0 +1,27 @@
+Third-party notice for ktapeout-050-silverscript-compat
+
+This directory contains a modified copy of the SilverScript language parser and
+compiler published by the Kaspa developers at https://github.com/kaspanet/silverscript
+(crate silverscript-lang), which is distributed under the ISC license. The upstream
+license text is in the LICENSE file in this directory and must be kept with every
+copy of this code.
+
+Copyright 2026 Kaspa Developers (upstream).
+
+Role in KTAPEOUT: this is the pinned SilverScript compatibility layer used by the
+Registry Adapter workbench to rebuild TN10 adapter contract scripts. The design
+requires rebuilt parent and Gap scripts to match the deployed scripts byte for byte,
+so this copy is pinned rather than tracking upstream. It is adapted to the pinned
+rusty-kaspa revision used by this repository (01b532e8b553523216471682649693af92f0fd16)
+and to Rust edition 2024. Changing it changes the compiler digest below and requires
+re-running the byte-exact reconciliation against the recorded TN10 transactions.
+
+Pinned digest of this directory (excluding LICENSE and NOTICE): 29 files,
+SHA-256 c5b6e2ac6d2a52dbd0cd9b0b5ea9701c649787781438c656b3c37fd25b81f309. The digest is computed over the files sorted by UTF-8 relative path as
+SHA-256 of the concatenation of: relative path, a NUL byte, the lowercase hexadecimal
+SHA-256 of the file content, and a line feed.
+
+Provenance gap: the exact upstream commit this copy was derived from was not recorded
+when it was imported. Replacing this copy with a pinned upstream revision is possible
+only after byte-exact reconciliation shows identical compiler output for the recorded
+TN10 contracts.

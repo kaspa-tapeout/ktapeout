@@ -29,11 +29,14 @@ the generator's exact path-to-file-hash inventory comparison.
 | Name registration in existing CompactV1 namespaces | `ktape name register-request`, `ktape name register-plan` | `NOT_IMPLEMENTED` | `register-request` fails closed when the required CompactV1 witness context is unavailable; TN10 end-to-end registration is incomplete. `docs/reference/cli.md` (Read-only TN10 name registration plan) |
 | Namespace-key list inputs and validation | `ktape name register-plan --keys-file`, `--keys-url` | `MOCK_OR_VM` | Clean-candidate `registered_keys` 54/54 passed, including URL validation, bounded fetch, union and mock dual-RPC recomputation; no live plan was produced for the existing CompactV1 namespace. `docs/reference/cli.md` (Read-only TN10 name registration plan) |
 | Browser application loading | KTAPEOUT Shell; no `ktape` command | `UNVERIFIED` | Candidate documents content checks, but the loader and its checks share the site origin; the candidate does not establish independent origin protection. `docs/concepts/storage-and-retention.md`; `docs/reference/capabilities-and-status.md` (Known limitations) |
+| Official registry child-registration planning frontend | `ktape app publish <namespace>/<slug> --network testnet-10` | `MOCK_OR_VM` | Saved witnesses and newly constructed transactions pass the pinned offline VM. The live canary used `name register-request` and `name register-plan`, not this frontend. |
 | Historical Compact Registry deployment | No current public deployment command | `LIVE_TN10_PRIVATE_TOOL` | Candidate evidence records genesis outpoint/transaction ID `7c9c7542890f16a758b5610c277a787f5a43cc37350bb310e494ceda1bd0a850:0`; this is historical registry evidence, not namespace issuance or name registration. `release-evidence/tn10/compact-tn10-deployment-readback-20260928.json` |
 
 Every `LIVE_TN10` and `LIVE_TN10_PRIVATE_TOOL` row is based on transaction IDs
 documented in the cited evidence; those records were not rechecked online this
-round. Two public RPC endpoints do not prove independent ownership. No matrix row establishes
+round. The 2026-11-10 namespace canary transactions are older than the node
+retained-history window (about 39 hours) and could not be re-located on 2026-11-11; they rest on
+the two-node readback recorded at the time. Two public RPC endpoints do not prove independent ownership. No matrix row establishes
 Mainnet availability, production retention, cross-device recovery, or a
 security audit.
 

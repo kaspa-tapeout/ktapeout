@@ -1,0 +1,26 @@
+{
+  "schema": "KTAPEOUT-OFFICIAL-REGISTRY-LINEAGE-EVIDENCE-V1",
+  "evidence_level": "MOCK_OR_VM",
+  "network": "testnet-10",
+  "adapter_id": "ktape.official.adapter.registry",
+  "adapter_semver": "1.0.0",
+  "root_covenant_id": "4e5507386557eb92c0cbce76ce0c90f8bd8e265ea9bb3d331a49ad947ce61bb4",
+  "scope": "Saved transaction-vector and local compiler comparison; no fresh node readback or trust-anchor verification.",
+  "source_vectors": "data/registry/real-registration-sigscript-vectors-v1.json",
+  "fixed_genesis_profile_policy_tuple": {
+    "status": "UNVERIFIED",
+    "value": null
+  },
+  "bridge_trust_anchor": {
+    "status": "UNVERIFIED",
+    "value": null
+  },
+  "historical_compact_root": "ec0a43245c97e363ffade6e13778f64e4ab5414641c218bc3e963f54488e6a23",
+  "historical_evidence_is_current_identity": false,
+  "bond_boundary": {
+    "normative_namespace_claim": "10 KAS refundable bond; specification unchanged.",
+    "observed_child_registration": "2 KAS net additional locking in saved transactions; a different operation from namespace claim.",
+    "bondSompi": "State-field lower bound, not evidence of a refundable namespace-claim implementation.",
+    "release_admission": "UNVERIFIED; available receipts do not admit the release path. No refund guarantee."
+  }
+}

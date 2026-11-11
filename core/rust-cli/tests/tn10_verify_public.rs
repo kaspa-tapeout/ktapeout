@@ -121,6 +121,27 @@ fn evidence(plan: Value, block: &RpcBlock) -> Value {
 }
 
 #[test]
+fn registry_transaction_requires_matching_transaction_id() {
+    let d = dir();
+    let p = plan(&d);
+    let mut a = Fake::new(&p);
+    let mut b = Fake::new(&p);
+    let mut request = evidence(p, &a.block);
+    request["schema"] = json!("KTAPEOUT-TN10-REGISTRY-VERIFY-V1");
+    request["transaction"] = request["plan"]["transaction"].clone();
+    request.as_object_mut().unwrap().remove("plan");
+    let out = d.join("verify.json");
+    tn10_pipeline::verify_with_transports(&request, &out, &mut a, &mut b).unwrap();
+    request["txid"] = json!("00".repeat(32));
+    assert_eq!(
+        tn10_pipeline::verify_with_transports(&request, &out, &mut a, &mut b)
+            .unwrap_err()
+            .to_string(),
+        "TN10_PLAN_TRANSACTION_MISMATCH"
+    );
+}
+
+#[test]
 fn proof_is_recomputed_and_proof_valid_is_only_a_claim() {
     let d = dir();
     let p = plan(&d);

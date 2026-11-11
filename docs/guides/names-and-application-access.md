@@ -34,10 +34,13 @@ one from another unless the selected Profile contract says so. The Compact
 Registry deed and the full deed are separate Profile families; clients MUST
 reject a family mismatch instead of applying a compatibility cast.
 
-The public Testnet-10 Registry identity inputs are listed in the
-[`release-evidence/tn10/`](../../release-evidence/tn10/) directory. Verify the
-manifest and Bridge trust anchor before using a name as a trusted development
-reference, and obtain the required fresh readback for any publication claim.
+The current TN10 `ktape.official.adapter.registry` 1.0.0 lineage and its
+unverified identity inputs are described in the
+[lineage evidence boundary](../../data/registry/official-registry-lineage-evidence-v1.json).
+The [`release-evidence/tn10/`](../../release-evidence/tn10/) directory describes
+a historical Compact Registry root, not the current lineage. Verify the
+current fixed genesis/Profile/policy tuple and Bridge trust anchor, and obtain
+fresh readback before treating a name as a trusted development reference.
 
 ## Build your own website or gateway
 

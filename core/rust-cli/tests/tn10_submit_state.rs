@@ -27,7 +27,7 @@ fn temp_dir() -> PathBuf {
 
 fn signed_plan(dir: &Path) -> PathBuf {
     let secp = secp256k1::Secp256k1::new();
-    let signing_key = secp256k1::SecretKey::from_slice(&[2u8; 32]).unwrap();
+    let signing_key = secp256k1::SecretKey::from_slice(&[93u8; 32]).unwrap();
     let keypair = secp256k1::Keypair::from_secret_key(&secp, &signing_key);
     let (xonly_key, _) = keypair.x_only_public_key();
     let request = json!({
@@ -319,9 +319,9 @@ fn live_input(script: &str, amount: u64, tx_byte: u8) -> (String, Value) {
 
 #[test]
 fn namespace_transition_inputs_require_exact_dual_node_live_utxo_readback() {
-    let secret = SecretKey::from_slice(&[9; 32]).unwrap();
+    let synthetic_key = SecretKey::from_slice(&[9; 32]).unwrap();
     let public = hex::encode(
-        Keypair::from_secret_key(&Secp256k1::new(), &secret)
+        Keypair::from_secret_key(&Secp256k1::new(), &synthetic_key)
             .x_only_public_key()
             .0
             .serialize(),
@@ -553,7 +553,7 @@ fn namespace_signed_document(dir: &Path) -> PathBuf {
             .0
             .serialize(),
     );
-    let claimant_secret = SecretKey::from_slice(&[2; 32]).unwrap();
+    let claimant_secret = SecretKey::from_slice(&[93; 32]).unwrap();
     let claimant = hex::encode(
         Keypair::from_secret_key(&secp, &claimant_secret)
             .x_only_public_key()

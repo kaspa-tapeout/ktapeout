@@ -171,5 +171,12 @@ On 2026-11-10 a disposable, now-abandoned TN10 test namespace completed:
 | Child registration | `feb812c497196762bdc306c7128a9415be95a073fa3b37a78d2fe78c4561d197` | Deed output 2, 100000000 sompi and parent CID matched |
 
 The public nodes were neutrino-10.kaspa.stream and quark-10.kaspa.red; operator
-independence is not proven. The test namespace is abandoned and is not a
+independence is not proven.
+
+Retention and recheck: Testnet-10 nodes prune transaction bodies after a retained-history
+window, measured at about 39 hours. These three transactions are older than that window,
+so a block scan on 2026-11-11 could not locate them (`TN10_LOCATOR_NOT_FOUND_SUBMISSION_UNKNOWN`
+means "not found", not "does not exist"). The two-node readback in the table was recorded at
+the time and is preserved evidence; it was not independently rechecked after 2026-11-10.
+Durable evidence is the saved readback record and the live UTXO state, not transaction history. The test namespace is abandoned and is not a
 recommended namespace or application. See the [capability matrix](../reference/capabilities-and-status.md).

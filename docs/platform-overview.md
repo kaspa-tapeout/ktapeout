@@ -4,8 +4,8 @@ The broader KTAPEOUT platform connects application identity, reusable
 components, development tools, testing and on-chain publication. This 0.5.0
 candidate provides protocol documentation, local Core/Verifier/CLI workflows and
 a Testnet-10 artifact-root publish flow. Name registration for existing TN10
-CompactV1 namespaces is not complete in the public CLI: the V6 reference path
-has verified assembly and VM coverage, while the existing CompactV1 path has
+`ktape.official.adapter.registry` 1.0.0 namespaces is not complete in the public CLI: the isolated V6 sovereign-lineage reference path (not the public developer path)
+has verified assembly and VM coverage, while the existing `ktape.official.adapter.registry` 1.0.0 path has
 not completed an on-chain end-to-end run. Check [capabilities and status](reference/capabilities-and-status.md)
 before treating a documented platform step as available in this package.
 
@@ -38,7 +38,7 @@ publication are separate results.
 Prepare a network-specific plan, authorize it through your signer or provider,
 and publish through a supported L1 adapter. Read back the resulting state.
 Name registration is a developer capability, but its availability depends on
-the namespace contract version; the existing TN10 CompactV1 end-to-end path is
+the namespace contract version; the existing TN10 official registry end-to-end path is
 not complete in this preview.
 
 ### 05 — Access

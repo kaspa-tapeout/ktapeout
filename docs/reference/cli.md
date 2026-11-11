@@ -81,6 +81,12 @@ profile, stale hash, missing field or other malformed input.
 
 ### Read-only TN10 name registration plan
 
+`ktape app publish <namespace>/<slug> --network testnet-10 --intent <intent.json> --names-file <names.json> --output <plan.json>`
+provides the official-registry child-registration planning frontend. It uses
+read-only dual-node observations and does not sign or broadcast. Its evidence
+is `MOCK_OR_VM`; the live canary used `name register-request` and
+`name register-plan`.
+
 Name and namespace registration is a developer capability. The current ktape
 root's ordinary namespace issuance and registration in the resulting
 developer-owned namespace have limited live TN10 evidence. Follow the

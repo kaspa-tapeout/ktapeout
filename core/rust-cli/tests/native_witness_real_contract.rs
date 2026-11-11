@@ -333,7 +333,11 @@ fn assembled_fixture(parent_key: Option<&str>) -> (Transaction, Vec<UtxoEntry>) 
     for (input, budget) in [10u64, 47, 10].into_iter().enumerate() {
         request["inputs"][input]["compute_budget"] = json!(budget);
     }
-    let plan = ktapeout_cli::tn10_pipeline::build_native_registration_plan(&request)
+    assemble_request(&request)
+}
+
+fn assemble_request(request: &Value) -> (Transaction, Vec<UtxoEntry>) {
+    let plan = ktapeout_cli::tn10_pipeline::build_native_registration_plan(request)
         .expect("public registration planner accepts the fixture");
     let authorization = test_authorization(&plan);
     let confirmation = format!("SIGN {}", plan["plan_sha256"].as_str().unwrap());
@@ -386,6 +390,72 @@ fn assembled_fixture(parent_key: Option<&str>) -> (Transaction, Vec<UtxoEntry>) 
         })
         .collect();
     (tx, utxos)
+}
+
+#[test]
+fn newly_constructed_official_registration_executes_in_pinned_vm() {
+    use ktapeout_cli::{name_state_template::blake2b_256, registry_templates};
+    let vectors: Value = serde_json::from_str(include_str!(
+        "../../../data/registry/adapter-registry-live-vectors-v1.json"
+    ))
+    .unwrap();
+    let mut state = vectors["vectors"][1]["state"].clone();
+    let fixture: Value = serde_json::from_str(FIXTURE).unwrap();
+    let mut request = fixture["request"].clone();
+    // Worthless fixed test keys from the public synthetic fixture; never fund.
+    for (field, role) in [
+        ("authority_xonly", "parent"),
+        ("claimant_xonly", "claimant"),
+        ("target_authority_xonly", "target"),
+    ] {
+        state[field] = request["role_public_keys"][role].clone();
+    }
+    state["authority_commitment"] = json!(hex::encode(Sha256::digest(
+        hex::decode(state["authority_xonly"].as_str().unwrap()).unwrap()
+    )));
+    let witnesses = registry_templates::registration_witness(&state).unwrap();
+    let input_scripts = witnesses.map(|witness| {
+        let stack = decode_witness_stack(&witness);
+        let redeem = hex::decode(stack.last().unwrap()["data_hex"].as_str().unwrap()).unwrap();
+        [
+            vec![0, 0, 0xaa, 0x20],
+            blake2b_256(&redeem).to_vec(),
+            vec![0x87],
+        ]
+        .concat()
+    });
+    for (index, script) in input_scripts.iter().enumerate() {
+        request["inputs"][index]["script_public_key"] = json!(hex::encode(script));
+        request["inputs"][index]["covenant_id"] = state["registry_root"].clone();
+    }
+    request["covenant_witness_contexts"] =
+        registry_templates::registration_contexts_for_inputs(&state, &input_scripts).unwrap();
+    for (index, script) in registry_templates::registration_output_scripts(&state)
+        .unwrap()
+        .into_iter()
+        .enumerate()
+    {
+        request["outputs"][index]["script_public_key"] = json!(script);
+        request["outputs"][index]["covenant_id"] = state["registry_root"].clone();
+    }
+    // Preserve Gap value in its two successors; the fee input also funds the child bond.
+    for index in 1..4 {
+        request["outputs"][index]["value"] = json!(100_000_000u64);
+    }
+    request["inputs"][1]["amount"] = json!(200_000_000u64);
+    request["outputs"][4]["value"] = json!(1_890_000_000u64);
+    request["outputs"][4]["script_public_key"] = request["inputs"][2]["script_public_key"].clone();
+    for (index, budget) in [256u64, 256, 10].into_iter().enumerate() {
+        request["inputs"][index]["compute_budget"] = json!(budget);
+    }
+    let (tx, utxos) = assemble_request(&request);
+    let populated = PopulatedTransaction::new(&tx, utxos.clone());
+    let metrics = verify_post_toccata_populated_transaction(&populated).unwrap();
+    assert_eq!(metrics.len(), 3);
+    let mut changed = tx.clone();
+    changed.outputs[2].script_public_key = changed.outputs[1].script_public_key.clone();
+    changed.finalize();
+    assert!(!verify_fixture_tx(&changed, utxos));
 }
 
 #[test]

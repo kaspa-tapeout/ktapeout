@@ -13,8 +13,8 @@ fn test_key_info_derives_public_identity_without_emitting_secret() {
     let dir = std::env::temp_dir().join(format!("ktape-test-key-info-{}-{id}", std::process::id()));
     fs::create_dir(&dir).unwrap();
     let key_file = dir.join("test-key.txt");
-    let secret = format!("{}\n", "00".repeat(31) + "01");
-    fs::write(&key_file, &secret).unwrap();
+    let synthetic_scalar_hex = format!("{}\n", "00".repeat(31) + "01");
+    fs::write(&key_file, &synthetic_scalar_hex).unwrap();
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -36,7 +36,7 @@ fn test_key_info_derives_public_identity_without_emitting_secret() {
     );
     assert_eq!(response["data"]["network"], "testnet-10");
     assert_eq!(response["data"]["secret_emitted"], false);
-    assert!(!stdout.contains(secret.trim()));
+    assert!(!stdout.contains(synthetic_scalar_hex.trim()));
 }
 
 #[test]

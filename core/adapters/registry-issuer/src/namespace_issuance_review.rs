@@ -33,7 +33,7 @@ pub fn attach_review(body: &mut Value, accounting: IssuanceAccounting) -> Result
         object.insert(
             "verification_status".into(),
             serde_json::json!(
-                "UNVERIFIED_ON_CHAIN: 命名空间发行计划及其成本尚未经过真实 TN10 验证"
+                "UNVERIFIED_ON_CHAIN: The namespace issuance plan and its costs have not been verified on live TN10"
             ),
         );
         object.insert("signing_allowed".into(), serde_json::json!(false));
@@ -55,9 +55,9 @@ pub fn attach_review(body: &mut Value, accounting: IssuanceAccounting) -> Result
         object.insert(
             "permanent_warnings".into(),
             serde_json::json!([
-                "没有退还路径；锁定金额不可退还。",
-                "丢失控制密钥将永久失去命名空间控制权。",
-                "第一版不支持转让和关闭命名空间。"
+                "There is no refund path. The locked amount is non-refundable.",
+                "Losing the control key permanently forfeits control of the namespace.",
+                "Version 1 does not support transferring or closing namespaces."
             ]),
         );
     }
